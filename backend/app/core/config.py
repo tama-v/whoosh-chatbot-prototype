@@ -75,7 +75,13 @@ RATE_LIMIT_DEFAULT = max(1, int(os.getenv("RATE_LIMIT_DEFAULT", "240")))
 VOICE_NOTICE = (
     "ASR/TTS Qwen hanya aktif bila DASHSCOPE_API_KEY dan QWEN_BASE_URL diisi di backend. "
     "Tanpa kunci, suara memakai fallback demo yang jujur ditandai di UI: "
-    "SAPI Windows untuk bahasa Inggris dan suara browser untuk bahasa Indonesia."
+    "SAPI Windows untuk bahasa Inggris (bila tersedia di server) dan suara browser untuk bahasa Indonesia."
+)
+
+VOICE_NOTICE_NO_SAPI = (
+    "ASR/TTS Qwen hanya aktif bila DASHSCOPE_API_KEY dan QWEN_BASE_URL diisi di backend. "
+    "Di mesin ini Qwen dan SAPI Windows tidak tersedia, sehingga suara memakai "
+    "suara browser untuk kedua bahasa (ditandai di UI)."
 )
 
 DEMO_TTS_NOTICE = (

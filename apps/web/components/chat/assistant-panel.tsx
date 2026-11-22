@@ -56,7 +56,7 @@ export function AssistantPanel({
     <aside className="flex min-h-0 flex-col gap-3 xl:h-full xl:overflow-y-auto xl:pr-0.5">
       <div className="ui-card shrink-0 overflow-hidden">
         <div className="relative overflow-hidden bg-blush px-3.5 pb-3 pt-3 sm:px-5 sm:pb-4 sm:pt-4 xl:pb-6 xl:pt-5">
-          <div className="pointer-events-none absolute left-1/2 top-[55%] h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full border border-maroon/10 xl:h-64 xl:w-64" />
+          <div className="pointer-events-none absolute left-1/2 top-[55%] hidden h-52 w-52 -translate-x-1/2 -translate-y-1/2 rounded-full border border-maroon/10 xl:block xl:h-64 xl:w-64" />
 
           <div className="relative flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/70 bg-paper/85 px-2.5 py-1 text-[13px] font-medium text-ink">

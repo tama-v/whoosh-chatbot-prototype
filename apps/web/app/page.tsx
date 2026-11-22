@@ -8,6 +8,7 @@ import {
   Mic,
 } from "lucide-react";
 import { HeiserMascot } from "@/components/heiser/heiser-mascot";
+import { KnowledgeStats } from "@/components/knowledge-stats";
 import { MarketingHeader } from "@/components/marketing-header";
 import { WhooshMark, Wordmark } from "@/components/whoosh-mark";
 
@@ -136,7 +137,7 @@ export default function LandingPage() {
         <section className="mx-auto grid max-w-7xl items-center gap-14 px-5 pb-20 pt-12 sm:px-8 lg:min-h-[calc(100svh-72px)] lg:grid-cols-2 lg:gap-16 lg:py-16">
           <div className="animate-fade-up">
             <p className="text-[13px] font-medium text-muted">
-              Demo mandiri · 12 dokumen contoh · bukan sistem operator
+              Demo mandiri · <KnowledgeStats variant="docs-example" /> · bukan sistem operator
             </p>
             <h1 className="mt-5 max-w-[600px] text-[42px] font-bold leading-[1.05] tracking-[-0.035em] text-ink sm:text-[56px] lg:text-[44px] xl:text-[58px]">
               Asisten perjalanan Whoosh, dengan{" "}
@@ -156,7 +157,7 @@ export default function LandingPage() {
               </Link>
             </div>
             <p className="mt-7 text-[13px] leading-relaxed text-muted">
-              12 dokumen · 42 potongan teks · voice lewat mikrofon browser · riwayat di SQLite lokal
+              <KnowledgeStats variant="pair" /> · voice lewat mikrofon browser · riwayat di SQLite lokal
             </p>
           </div>
 
@@ -169,7 +170,9 @@ export default function LandingPage() {
                   </span>
                   <div>
                     <p className="text-[14px] font-semibold text-ink">Heiser</p>
-                    <p className="text-[13px] text-muted">Knowledge base demo · 12 dokumen</p>
+                    <p className="text-[13px] text-muted">
+                      Knowledge base demo · <KnowledgeStats variant="docs" />
+                    </p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted">
@@ -185,7 +188,7 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                <div className="space-y-4 p-4 sm:p-5">
+                <div className="min-w-0 space-y-4 p-4 sm:p-5">
                   <p className="ml-auto max-w-[88%] rounded-2xl rounded-br-md bg-cream px-4 py-3 text-[14px] leading-relaxed text-ink">
                     Bagaimana cara boarding Whoosh?
                   </p>
@@ -207,7 +210,7 @@ export default function LandingPage() {
                   </div>
                   <div className="flex items-center gap-2 rounded-xl border border-line bg-cream/40 px-3 py-2.5">
                     <Mic className="h-4 w-4 shrink-0 text-maroon/70" />
-                    <span className="flex-1 truncate text-[13px] text-muted">
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-muted">
                       Tanya soal boarding, tiket, atau bagasi…
                     </span>
                     <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-maroon text-white">
@@ -267,7 +270,7 @@ export default function LandingPage() {
                 Transparan dari pertanyaan sampai sumber.
               </h2>
               <p className="mt-5 max-w-sm text-[15px] leading-[1.72] text-muted">
-                Chat dan laporan membaca indeks yang sama: 42 potongan teks dari 12 dokumen. Tidak
+                Chat dan laporan membaca indeks yang sama: <KnowledgeStats variant="index" />. Tidak
                 ada jalur pintas yang melewati dokumen.
               </p>
               <p className="mt-8 text-[13px] leading-relaxed text-muted">

@@ -584,7 +584,11 @@ export function ChatWorkspace() {
                     <>
                       <span className="sm:hidden">Mode demo</span>
                       <span className="hidden sm:inline">
-                        {aiMode === "qwen" ? "Qwen · knowledge base" : "Demo · 12 dokumen"}
+                        {aiMode === "qwen"
+                          ? "Qwen · knowledge base"
+                          : documents.length > 0
+                            ? `Demo · ${documents.length} dokumen`
+                            : "Demo · knowledge base"}
                       </span>
                     </>
                   )}

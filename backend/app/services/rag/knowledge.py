@@ -41,6 +41,8 @@ STOPWORDS = {
     "banyak", "semua", "semuanya", "banget",
     "hmm", "hm", "wkwk", "hehe", "haha", "oke", "ok", "sip", "siap", "mantap", "baik",
     "gak", "nggak", "ngga", "engga", "ga",
+    "harus", "dilakukan", "mesti", "perlu", "lakukan", "perhatikan", "sebutkan",
+    "jelaskan", "berikan", "know",
 }
 
 SYNONYMS = {
@@ -62,17 +64,54 @@ SYNONYMS = {
     "cancellation": {"cancel", "refund", "pembatalan"},
     "tiket": {"ticket", "pemesanan"},
     "stasiun": {"station"},
-    "fasilitas": {"facility", "toilet", "musala", "lift", "aksesibilitas"},
+    "fasilitas": {"facility", "toilet", "musala"},
     "keluhan": {"complaint", "laporan", "masalah"},
     "laporan": {"keluhan", "complaint"},
     "refund": {"pembatalan", "refund"},
     "ticket": {"tiket", "pemesanan"},
     "station": {"stasiun"},
-    "facility": {"facilities", "toilet", "lift", "elevator", "accessibility", "prayer", "musala"},
-    "facilities": {"facility", "toilet", "lift", "elevator", "accessibility"},
-    "lift": {"elevator", "accessibility", "facility", "fasilitas"},
-    "elevator": {"lift", "accessibility", "facility"},
-    "accessibility": {"accessible", "lift", "facility", "aksesibilitas"},
+    "facility": {"facilities", "toilet", "prayer", "musala"},
+    "facilities": {"facility", "toilet", "prayer", "musala"},
+    "lift": {"elevator", "accessibility", "aksesibilitas"},
+    "elevator": {"lift", "accessibility", "aksesibilitas"},
+    "accessibility": {"accessible", "lift", "elevator", "aksesibilitas", "wheelchair"},
+    "aksesibilitas": {"accessibility", "accessible", "lift", "elevator", "wheelchair"},
+    "akses": {"access", "accessibility", "aksesibilitas"},
+    "akse": {"akses", "access", "accessibility", "aksesibilitas"},
+    "wheelchair": {"accessibility", "accessible", "aksesibilitas", "kursi"},
+    "kursi": {"wheelchair", "accessibility", "aksesibilitas"},
+    "roda": {"wheelchair", "accessibility", "aksesibilitas"},
+    "ketinggalan": {"tertinggal", "hilang", "lost", "missed", "left"},
+    "tertinggal": {"ketinggalan", "hilang", "lost", "missed", "left"},
+    "beli": {"membeli", "pembelian", "buy", "buying", "purchase", "booking"},
+    "bawa": {"membawa", "dibawa", "bawaan", "carry", "bring", "bringing"},
+    "bayar": {"pembayaran", "payment", "pay", "paid"},
+    "pesan": {"memesan", "pemesanan", "book", "booking", "order"},
+    "turun": {"turunkan", "drop", "dropoff", "alight"},
+    "lapor": {"laporan", "melapor", "melaporkan", "report", "reporting", "complaint"},
+    "melapor": {"laporan", "melaporkan", "lapor", "report"},
+    "melaporkan": {"laporan", "melapor", "lapor", "report", "reporting"},
+    "report": {"laporan", "reporting", "complaint", "lapor"},
+    "changing": {"change", "reschedule", "schedule", "ubah", "jadwal"},
+    "missed": {"miss", "train"},
+    "miss": {"missed", "train"},
+}
+
+# Broad trip anchors that should not, on their own, make an unknown topic look answerable.
+GENERIC_FOCUS_TERMS = {
+    "stasiun", "station", "kereta", "train", "whoosh", "tiket", "ticket", "perjalanan",
+    "trip", "travel", "penumpang", "passenger",
+}
+# Ordinary action verbs. When these are the only unknown words, a general answer still helps.
+ACTION_TERMS = {
+    "bawa", "beli", "bayar", "pesan", "ubah", "batal", "ganti", "naik", "turun", "ambil",
+    "kirim", "hubungi", "lapor", "cari", "temukan", "terima", "pakai", "gunakan", "isi",
+    "tanya", "minta", "datang", "pergi", "pulang", "masuk", "keluar", "buka", "tutup",
+}
+# Size, age, and speed modifiers do not change which topic the question is about.
+MODIFIER_TERMS = {
+    "besar", "kecil", "panjang", "pendek", "berat", "ringan", "lama", "baru", "cepat",
+    "dekat", "jauh", "umum", "biasa", "utama", "khusus",
 }
 
 TOKEN_RE = re.compile(r"[a-zA-Z0-9]+")
@@ -175,6 +214,68 @@ def build_social_answer(intent: str, language: str = "id") -> str:
     answers = SOCIAL_ANSWERS.get(intent, SOCIAL_ANSWERS["greeting"])
     return answers.get("en" if language == "en" else "id", answers["id"])
 
+
+COMPLAINT_RE = re.compile(
+    r"\b(keluhan|komplain|complaint|mengeluh|complain)\b"
+    r"|\b(lapor|melaporkan|report|reporting)\b[^.?!]{0,80}"
+    r"\b(petugas|ac|pendingin|kereta|stasiun|telat|terlambat|rusak|kotor|ramah|refund|bagasi)\b",
+    re.IGNORECASE,
+)
+LOST_ITEM_RE = re.compile(
+    r"\b(tertinggal|ketinggalan|hilang|lost|lost and found|left)\b", re.IGNORECASE
+)
+CONTACT_RE = re.compile(
+    r"\b(nomor|kontak|contact|telepon|telp|phone|hotline|whatsapp|email)\b"
+    r"(?:\s+\w+){0,4}\s*\b(customer\s*service|cs|layanan|service|hotline|kontak|contact|telepon|phone)\b"
+    r"|\b(customer\s*service|cs)\b\s*\b(nomor|number|kontak|contact|telepon|phone)\b"
+    r"|\b(call center|nomor telepon|phone number|contact number)\b",
+    re.IGNORECASE,
+)
+
+
+def detect_guidance_intent(text: str) -> str | None:
+    """Detect questions that need a feature or channel pointer instead of retrieval."""
+    if COMPLAINT_RE.search(text) and not LOST_ITEM_RE.search(text):
+        return "complaint"
+    if CONTACT_RE.search(text):
+        return "contact"
+    return None
+
+
+def build_guidance_answer(intent: str, language: str = "id") -> str:
+    if language == "en":
+        if intent == "complaint":
+            return (
+                "To file a complaint, open the Reports feature — the Reports tab in the "
+                "mobile app or the Reports page on the web. Describe what happened; the "
+                "assistant will classify the category and priority, then create a "
+                "simulated report number starting with WH- that you can track.\n\n"
+                "Note: reports in this prototype are simulations only and are not sent to "
+                "staff or operator systems. For urgent issues at the station, contact "
+                "official staff."
+            )
+        return (
+            "The demo knowledge base does not include phone numbers or official contact "
+            "details. For the customer service number, use the operator's official "
+            "channel or ask station staff. This prototype is not connected to operator "
+            "systems, so I cannot provide a verified contact number."
+        )
+    if intent == "complaint":
+        return (
+            "Untuk menyampaikan keluhan, buka fitur Laporan — tab Laporan di aplikasi "
+            "mobile atau halaman Laporan di web. Tulis kronologi masalahnya; assistant "
+            "akan mengklasifikasikan kategori dan prioritas, lalu membuat nomor laporan "
+            "simulasi berformat WH- yang bisa dilacak statusnya.\n\n"
+            "Catatan: laporan di prototype ini hanya simulasi dan tidak dikirim ke petugas "
+            "atau sistem operator. Untuk masalah mendesak di stasiun, hubungi petugas resmi."
+        )
+    return (
+        "Knowledge base demo belum memuat nomor telepon atau detail kontak resmi. Untuk "
+        "nomor layanan pelanggan, gunakan kanal resmi operator atau tanyakan ke petugas "
+        "stasiun. Prototype ini tidak terhubung ke sistem operator, jadi saya tidak bisa "
+        "memberi nomor kontak yang terverifikasi."
+    )
+
 EN_STOP_HINTS = {"the", "and", "is", "are", "how", "what", "can", "with", "for", "you", "my", "do"}
 ID_STOP_HINTS = {"yang", "dan", "apa", "bagaimana", "cara", "bisa", "tidak", "untuk", "dengan", "saya"}
 
@@ -202,7 +303,9 @@ class SearchHit:
 
 
 def _singular(token: str) -> str:
-    if len(token) > 3 and token.endswith("s") and not token.endswith(("ss", "us", "is")):
+    if len(token) > 3 and token.endswith("s") and not token.endswith(
+        ("ss", "us", "is", "as")
+    ):
         return token[:-1]
     return token
 
@@ -217,7 +320,7 @@ def raw_tokens(text: str) -> set[str]:
 
 def tokenize(text: str) -> set[str]:
     raw = [t.lower() for t in TOKEN_RE.findall(text)]
-    base = {t for t in raw if len(t) > 2 and t not in STOPWORDS}
+    base = {_singular(t) for t in raw if len(t) > 2 and t not in STOPWORDS}
     expanded = set(base)
     for term in base:
         expanded |= SYNONYMS.get(term, set())
@@ -586,10 +689,17 @@ def retrieve_with_trace(
             if not ({term} | {_singular(syn) for syn in SYNONYMS.get(term, set())}) & corpus_raw
         }
         trace["uncovered"] = sorted(uncovered)
+        trace["uncovered_focus"] = sorted(
+            term
+            for term in uncovered
+            if term not in GENERIC_FOCUS_TERMS
+            and term not in ACTION_TERMS
+            and term not in MODIFIER_TERMS
+        )
 
         fts_ranks: dict[str, int] = {}
         if fts_ok:
-            match = _fts_query(base_tokens)
+            match = _fts_query(sorted(query_terms)[:16])
             if match:
                 try:
                     fts_rows = conn.execute(
@@ -612,12 +722,13 @@ def retrieve_with_trace(
         )
 
     row_by_id = {row["id"]: row for row in rows}
+    vector_weight = 0.45 if embedding_trace.get("backend") == "hashed" else 1.0
     fused: dict[str, dict[str, Any]] = {}
     sources_by_id: dict[str, list[str]] = {}
     for source, ranks, weight in (
         ("fts", fts_ranks, 1.0),
         ("lexical", lexical_ranks, 0.9),
-        ("vector", vector_ranks, 1.0),
+        ("vector", vector_ranks, vector_weight),
     ):
         for chunk_id, rank in ranks.items():
             entry = fused.setdefault(chunk_id, {"score": 0.0})
@@ -625,14 +736,17 @@ def retrieve_with_trace(
             sources_by_id.setdefault(chunk_id, []).append(source)
 
     language_bonus = 0.02
+    lost_item_context = bool(ITEM_HINT_RE.search(query) and LOST_ITEM_RE.search(query))
     selected_pool: list[tuple[str, float]] = []
     raw_coverage_by_id: dict[str, float] = {}
+    expanded_coverage_by_id: dict[str, float] = {}
     for chunk_id, entry in fused.items():
         row = row_by_id.get(chunk_id)
         if not row:
             continue
         chunk_terms = tokens_by_id.get(chunk_id, set())
         coverage = len(query_terms & chunk_terms) / max(1, len(query_terms))
+        expanded_coverage_by_id[chunk_id] = coverage
         chunk_raw = raw_by_id.get(chunk_id, set())
         raw_coverage = len(query_raw & chunk_raw) / max(1, len(query_raw))
         raw_coverage_by_id[chunk_id] = raw_coverage
@@ -641,13 +755,21 @@ def retrieve_with_trace(
             score += 0.015
         if query_terms & tokenize(row["section"] or ""):
             score += 0.008
+        if lost_item_context and LOST_ITEM_DOC_RE.search(row["title"]):
+            score += 0.04
         if language and row["language"] == language:
             score += language_bonus
         selected_pool.append((chunk_id, score))
 
     best_coverage = max(raw_coverage_by_id.values(), default=0.0)
+    best_expanded_coverage = max(expanded_coverage_by_id.values(), default=0.0)
     trace["best_coverage"] = round(best_coverage, 3)
-    if best_coverage < 0.5:
+    trace["best_expanded_coverage"] = round(best_expanded_coverage, 3)
+    if best_coverage < 0.5 and best_expanded_coverage < 0.5:
+        return [], trace
+    # A question whose content-bearing words are missing from the corpus must not be
+    # "answered" by quoting a chunk that merely shares a generic word such as "stasiun".
+    if trace["uncovered_focus"]:
         return [], trace
     trace["answerable"] = True
     if language:
@@ -665,7 +787,9 @@ def retrieve_with_trace(
     for chunk_id, score in selected_pool:
         if score < 0.01:
             continue
-        if raw_coverage_by_id.get(chunk_id, 0.0) <= 0:
+        if raw_coverage_by_id.get(chunk_id, 0.0) <= 0 and expanded_coverage_by_id.get(
+            chunk_id, 0.0
+        ) <= 0:
             continue
         row = row_by_id[chunk_id]
         per_document[row["document_id"]] = per_document.get(row["document_id"], 0) + 1
@@ -737,6 +861,41 @@ GUIDANCE_RE = re.compile(
 STRONG_GUIDANCE_RE = re.compile(
     r"(kanal resmi|situs resmi|official channel|official website)", re.IGNORECASE
 )
+MISSED_TRAIN_RE = re.compile(
+    r"\b(ketinggalan|tertinggal|terlambat|miss(?:ed)? (?:the )?train|arrive late)\b",
+    re.IGNORECASE,
+)
+MISSED_TRAIN_SECTION_RE = re.compile(
+    r"(tertinggal|terlambat|miss the train|arrive late)", re.IGNORECASE
+)
+BAGGAGE_HINT_RE = re.compile(
+    r"\b(bagasi|koper|tas|luggage|baggage|bag)\b", re.IGNORECASE
+)
+FACILITY_QUERY_RE = re.compile(
+    r"\b(lift|elevator|toilet|toilets|musala|prayer room|waiting area|area tunggu|"
+    r"facilities|fasilitas)\b",
+    re.IGNORECASE,
+)
+BROKEN_FACILITY_RE = re.compile(
+    r"\b(rusak|broken|not working|malfunction|mati|lapor|report)\b", re.IGNORECASE
+)
+FACILITY_SECTION_RE = re.compile(r"(fasilitas umum|common facilities)", re.IGNORECASE)
+ACCESSIBILITY_QUERY_RE = re.compile(
+    r"\b(aksesibilitas|accessibility|kursi roda|wheelchair|disabilitas|disability)\b",
+    re.IGNORECASE,
+)
+ACCESSIBILITY_SECTION_RE = re.compile(r"(aksesibilitas|accessibility)", re.IGNORECASE)
+LOST_ITEM_DOC_RE = re.compile(r"(barang tertinggal|lost items)", re.IGNORECASE)
+ITEM_HINT_RE = re.compile(r"\b(item|barang|belongings)\b", re.IGNORECASE)
+LOST_ACTION_RE = re.compile(
+    r"\b(harus|lakukan|should i do|what should|what do i do)\b", re.IGNORECASE
+)
+LOST_STEP_SECTION_RE = re.compile(r"(langkah awal|first steps)", re.IGNORECASE)
+PREPARE_QUERY_RE = re.compile(
+    r"\b(prepare|preparing|preparation|persiapan|before boarding|sebelum boarding)\b",
+    re.IGNORECASE,
+)
+PREPARE_SECTION_RE = re.compile(r"(before leaving|persiapan sebelum)", re.IGNORECASE)
 
 
 def select_demo_hits(
@@ -746,26 +905,85 @@ def select_demo_hits(
     if not hits:
         return [], None
 
-    query_raw = raw_tokens(question)
-    doc_scores: dict[str, float] = {}
-    for hit in hits:
-        doc_scores[hit.document_id] = doc_scores.get(hit.document_id, 0.0) + hit.score
-    top_document = max(doc_scores, key=doc_scores.get)
-    doc_hits = [hit for hit in hits if hit.document_id == top_document]
+    if (
+        MISSED_TRAIN_RE.search(question)
+        and not BAGGAGE_HINT_RE.search(question)
+        and not ITEM_HINT_RE.search(question)
+    ):
+        missed = next(
+            (
+                hit
+                for hit in hits
+                if MISSED_TRAIN_SECTION_RE.search(hit.section or "")
+                and not BAGGAGE_HINT_RE.search(
+                    f"{hit.document_title} {hit.section or ''}"
+                )
+            ),
+            None,
+        )
+        if missed:
+            return [missed], None
+
+    if ACCESSIBILITY_QUERY_RE.search(question):
+        preferred = next(
+            (hit for hit in hits if ACCESSIBILITY_SECTION_RE.search(hit.section or "")),
+            None,
+        )
+        if preferred:
+            return [preferred], None
+
+    if FACILITY_QUERY_RE.search(question) and not BROKEN_FACILITY_RE.search(question):
+        preferred = next(
+            (hit for hit in hits if FACILITY_SECTION_RE.search(hit.section or "")), None
+        )
+        if preferred:
+            return [preferred], None
+
+    pool = hits
+    if LOST_ITEM_RE.search(question) and ITEM_HINT_RE.search(question):
+        lost_hits = [hit for hit in pool if LOST_ITEM_DOC_RE.search(hit.document_title)]
+        if lost_hits:
+            pool = lost_hits
+            if LOST_ACTION_RE.search(question):
+                steps = next(
+                    (
+                        hit
+                        for hit in pool
+                        if LOST_STEP_SECTION_RE.search(hit.section or "")
+                    ),
+                    None,
+                )
+                if steps:
+                    return [steps], None
+
+    if PREPARE_QUERY_RE.search(question):
+        preparation = next(
+            (hit for hit in pool if PREPARE_SECTION_RE.search(hit.section or "")), None
+        )
+        if preparation:
+            return [preparation], None
+
+    query_terms = tokenize(question)
 
     def content_coverage(hit: SearchHit) -> float:
         text = f"{hit.section or ''} {hit.content}"
-        return len(query_raw & raw_tokens(text)) / max(1, len(query_raw))
+        return len(query_terms & raw_tokens(text)) / max(1, len(query_terms))
 
-    ranked = sorted(
-        doc_hits,
-        key=lambda hit: (
+    def section_affinity(hit: SearchHit) -> int:
+        return len(query_terms & tokenize(hit.section or ""))
+
+    def rank_key(hit: SearchHit) -> tuple[float, int, float, float]:
+        return (
             content_coverage(hit),
+            section_affinity(hit),
             float(hit.raw.get("raw_coverage", 0.0)) if hit.raw else 0.0,
             hit.score,
-        ),
-        reverse=True,
-    )
+        )
+
+    ranked_all = sorted(pool, key=rank_key, reverse=True)
+    top_document = ranked_all[0].document_id
+    doc_hits = [hit for hit in pool if hit.document_id == top_document]
+    ranked = sorted(doc_hits, key=rank_key, reverse=True)
     best_coverage = content_coverage(ranked[0])
     focused = [hit for hit in ranked if content_coverage(hit) >= best_coverage - 0.001][:2]
     caveat: str | None = None

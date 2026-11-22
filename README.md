@@ -131,7 +131,7 @@ Jika `DASHSCOPE_API_KEY` dan `QWEN_BASE_URL` kosong, aplikasi berjalan penuh dal
 
 - Retrieval hybrid lokal: FTS5 BM25 + skor leksikal IDF + vektor hashed 512 dimensi, digabung dengan RRF dan gerbang answerability.
 - Jawaban ekstraktif dengan sitasi dokumen/bagian.
-- TTS server demo memakai Windows SAPI untuk bahasa Inggris; bahasa Indonesia jatuh ke suara browser.
+- TTS server demo memakai Windows SAPI untuk bahasa Inggris bila suara SAPI tersedia di mesin server; jika tidak (atau untuk bahasa Indonesia), UI memakai suara browser.
 - ASR memakai Web Speech API di browser; jika tidak tersedia, UI merekam audio dan memanggil endpoint ASR (yang menjawab `503` tanpa kunci).
 
 UI menampilkan badge mode tersebut secara jujur (mis. "Mode demo", "Suara browser · server TTS belum tersedia").
@@ -150,7 +150,8 @@ UI menampilkan badge mode tersebut secara jujur (mis. "Mode demo", "Suara browse
 - **FTS5** — tabel `chunk_fts` (unicode61, remove_diacritics) memberi ranking BM25.
 - **Vektor** — tabel `chunk_embeddings` menyimpan vektor BLOB per chunk dan nama model. Vektor Qwen 1024 dimensi dipakai bila tersedia; vektor hashed 512 dimensi selalu bisa dibuat offline.
 - **Fusion** — skor gabungan RRF (K=20) dikali bobot coverage, plus boost judul/bagian/bahasa. Maksimal 2 chunk per dokumen.
-- **Gerbang bukti** — retrieval mengembalikan kosong bila coverage mentah terbaik < 0.5 (mis. "harga", "wifi", "anak"). Kata tambahan yang tidak ada di corpus tidak lagi menggagalkan pertanyaan topikal; respons demo melewati potongan yang coverage-nya rendah dan memakai bagian dokumen yang paling relevan. Sinonim (mis. cancel ↔ cancellation, lift ↔ elevator) dan bentuk jamak bahasa Inggris ikut dinormalisasi agar pertanyaan wajar tidak salah ditolak.
+- **Gerbang bukti** — retrieval mengembalikan kosong bila coverage mentah **dan** coverage sinonim sama-sama < 0.5, atau bila masih ada istilah fokus yang tidak ditemukan di corpus. Kata umum ("stasiun", "kereta", "tiket") dan kata aksi ("bawa", "bayar", "beli") tidak dihitung sebagai fokus. Sinonim (cancel ↔ cancellation, lift ↔ elevator, ketinggalan ↔ hilang), bentuk jamak Inggris, dan kata bantu ("harus", "lakukan") dinormalisasi agar pertanyaan wajar tidak salah ditolak, sementara topik yang benar-benar absen (mis. WiFi, harga) tetap dijawab "belum ditemukan". Respons demo memilih seksi paling relevan: boarding untuk ketinggalan kereta, fasilitas umum vs aksesibilitas, langkah awal untuk barang tertinggal, dan persiapan sebelum berangkat.
+- **Intent panduan** — pertanyaan keluhan ("cara lapor AC rusak") diarahkan ke fitur Laporan tanpa retrieval; pertanyaan kontak/nomor CS menjawab bahwa nomor resmi belum ada di knowledge base demo. Strategi ini tercatat di trace (`complaint` / `contact`).
 - **Pesan non-topik** — sapaan, permintaan bantuan, terima kasih, pertanyaan identitas, dan pesan uji singkat ("halo", "bisakah anda membantu saya", "test") dijawab langsung sebagai percakapan tanpa memicu retrieval; pesan di luar knowledge base mendapat jawaban "belum ditemukan" plus daftar topik yang tersedia.
 - **Trace** — setiap pesan menyimpan `retrieval_trace` (token, kandidat, skor, coverage, model embedding) dan `mode` (`qwen` / `demo` / `no-evidence`) untuk audit di admin.
 - **Voice** — hasil TTS Qwen di-cache di `backend/data/tts_cache`; metadata provider dikirim lewat header `X-Voice-*`.
@@ -162,7 +163,7 @@ UI menampilkan badge mode tersebut secara jujur (mis. "Mode demo", "Suara browse
 - **Sitasi** — setiap jawaban menampilkan dokumen + bagian sumber; jawaban tanpa bukti menyatakan informasi belum ditemukan.
 - **Knowledge base bilingual** — 6 dokumen ID + 6 dokumen EN (boarding, bagasi, tiket, fasilitas stasiun, lost & found, keluhan).
 - **Voice input** — Web Speech API (ID/EN) di browser; di mobile memakai rekaman `expo-av` → `POST /voice/transcribe`. Fallback web: MediaRecorder → transkrip yang bisa diedit.
-- **Voice output** — pemilih "Suara server" / "Suara browser"; server memakai Qwen TTS bila dikonfigurasi, lalu Windows SAPI demo (Inggris), lalu suara browser. Di mobile jawaban dibacakan dengan TTS perangkat (`expo-speech`) sesuai bahasa jawaban.
+- **Voice output** — pemilih "Suara server" / "Suara browser"; server memakai Qwen TTS bila dikonfigurasi, lalu Windows SAPI demo (Inggris) bila tersedia, lalu suara browser. Di mobile jawaban dibacakan dengan TTS perangkat (`expo-speech`) sesuai bahasa jawaban.
 - **Complaint assistant** — form dengan klasifikasi kategori/prioritas, nomor laporan simulasi (`WH-…`), pelacakan status lewat nomor tiket, timeline status; data terpisah per akun/tamu dan ikut terklaim saat login.
 - **Akun** — register/login/logout di web dan mobile, profil + bahasa + alamat server di tab Akun, gate admin di web.
 - **Admin** — analytics dari SQLite (trend 7 hari, status, kategori, sentimen rule-based, pertanyaan populer, jawaban belum ditemukan), ubah status keluhan, upload PDF/TXT/MD (maks 5 MB), reindex, hapus dokumen.
@@ -173,7 +174,7 @@ UI menampilkan badge mode tersebut secara jujur (mis. "Mode demo", "Suara browse
 - Supabase/Postgres + pgvector — saat ini SQLite + FTS5 + vektor lokal. Skema sudah dipisah agar mudah dipindah.
 - Integrasi, sinkronisasi, atau notifikasi ke sistem operator.
 - Model sentimen produksi (sentimen memakai kata kunci sederhana).
-- Integrasi Qwen ASR/TTS **belum diuji dengan kunci nyata** di environment ini; jalur tanpa kunci (503 + fallback browser/SAPI) yang terverifikasi. Nama model mengikuti dokumentasi Model Studio dan bisa berubah.
+- Integrasi Qwen ASR/TTS **belum diuji dengan kunci nyata** di environment ini; jalur tanpa kunci (503 + fallback suara browser) yang terverifikasi di Docker/Linux. Fallback SAPI hanya tersedia bila backend dijalankan di Windows. Nama model mengikuti dokumentasi Model Studio dan bisa berubah.
 - Suara TTS bahasa Indonesia di server hanya tersedia lewat Qwen; Windows SAPI biasanya tidak punya voice `id-ID`, sehingga mode demo memakai suara browser untuk bahasa Indonesia.
 - Verifikasi di perangkat fisik Android/iOS belum dilakukan; UI mobile diverifikasi lewat Expo web pada viewport 390×844.
 

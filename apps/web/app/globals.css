@@ -165,10 +165,6 @@ button:disabled {
   animation: headlampShimmer 2.4s ease-in-out infinite;
 }
 
-.heiser-embed .arm-click {
-  cursor: pointer;
-}
-
 /* ---------- Motion ---------- */
 @keyframes floatY {
   0%, 100% { transform: translateY(0); }

@@ -12,29 +12,25 @@ const HEISER_INNER_HTML = { __html: HEISER_SVG };
 type Props = {
   mode?: HeiserMode;
   className?: string;
-  interactive?: boolean;
 };
 
 const POSE_PRESETS: Record<string, {
-  armL: [number, number, number];
-  handL: string;
-  armR: [number, number, number];
-  handR: string;
+  armL: [number, number];
+  armR: [number, number];
   eyes: string;
   brow: number;
   tilt: number;
 }> = {
-  idle: { armL: [-64, -6, 0], handL: "relaxed", armR: [64, 6, 0], handR: "relaxed", eyes: "normal", brow: 0, tilt: 0 },
-  friendly: { armL: [-14, -48, -14], handL: "chest", armR: [-22, -32, -16], handR: "open", eyes: "normal", brow: -1.5, tilt: 1.5 },
-  thinking: { armL: [-40, -48, -8], handL: "relaxed", armR: [118, 82, -140], handR: "thinking", eyes: "normal", brow: 2.2, tilt: -3.2 },
-  happy: { armL: [34, 26, 14], handL: "open", armR: [-34, -26, -14], handR: "open", eyes: "happy", brow: -3, tilt: 0 },
-  surprised: { armL: [48, 22, 14], handL: "open", armR: [-48, -22, -14], handR: "open", eyes: "shock", brow: -5.5, tilt: -2.4 },
-  speakA: { armL: [-60, -6, 0], handL: "relaxed", armR: [38, 16, 0], handR: "chest", eyes: "normal", brow: -1, tilt: -1.2 },
-  speakB: { armL: [-38, -16, 0], handL: "chest", armR: [60, 6, 0], handR: "relaxed", eyes: "normal", brow: -1, tilt: 1.2 },
+  idle: { armL: [-64, -6], armR: [64, 6], eyes: "normal", brow: 0, tilt: 0 },
+  friendly: { armL: [-14, -48], armR: [-22, -32], eyes: "normal", brow: -1.5, tilt: 1.5 },
+  thinking: { armL: [-40, -48], armR: [118, 82], eyes: "normal", brow: 2.2, tilt: -3.2 },
+  happy: { armL: [34, 26], armR: [-34, -26], eyes: "happy", brow: -3, tilt: 0 },
+  surprised: { armL: [48, 22], armR: [-48, -22], eyes: "shock", brow: -5.5, tilt: -2.4 },
+  speakA: { armL: [-60, -6], armR: [38, 16], eyes: "normal", brow: -1, tilt: -1.2 },
+  speakB: { armL: [-38, -16], armR: [60, 6], eyes: "normal", brow: -1, tilt: 1.2 },
 };
 
 const TALK_CHOREO = ["speakA", "speakB", "speakA"];
-const HAND_POSES = ["relaxed", "open", "chest", "thinking", "aha"];
 const EXPRESSIONS = ["normal", "happy", "thinking", "surprised"];
 
 class Spring {
@@ -62,7 +58,7 @@ class Spring {
   }
 }
 
-export function HeiserMascot({ mode = "idle", className = "", interactive = true }: Props) {
+export function HeiserMascot({ mode = "idle", className = "" }: Props) {
   const hostRef = useRef<HTMLDivElement>(null);
   const modeRef = useRef<HeiserMode>(mode);
   const apiRef = useRef<((nextMode: HeiserMode) => void) | null>(null);
@@ -79,7 +75,6 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
     if (!svg) return;
 
     const q = <T extends Element = Element>(id: string) => host.querySelector<T>(`#${id}`);
-    const qa = (selector: string) => Array.from(host.querySelectorAll<SVGUseElement>(selector));
 
     const springs = {
       bodyY: new Spring(0, 140, 16),
@@ -91,10 +86,8 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
       pupilY: new Spring(0, 210, 20),
       armLShoulder: new Spring(-22, 130, 16),
       armLElbow: new Spring(-18, 145, 17),
-      armLWrist: new Spring(-10, 160, 18),
       armRShoulder: new Spring(22, 130, 16),
       armRElbow: new Spring(18, 145, 17),
-      armRWrist: new Spring(10, 160, 18),
       mouthOpen: new Spring(0, 290, 24),
       mouthWidth: new Spring(1, 260, 22),
       browLift: new Spring(0, 160, 18),
@@ -126,8 +119,6 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
       armRFront: q("arm-right-front"),
       tubeRFD: q("arm-right-front-tube-dark"),
       tubeRFW: q("arm-right-front-tube-white"),
-      handL: q("hand-left"),
-      handR: q("hand-right"),
       mouthClosed: q("mouth-closed-path"),
       mouthOpenGroup: q("mouth-open-group"),
       mouthCavity: q("mouth-cavity"),
@@ -151,33 +142,16 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
       lastGestureSwitch: 0,
       mouthTimer: null as ReturnType<typeof setInterval> | null,
       talkEndTimer: null as ReturnType<typeof setTimeout> | null,
-      rightHandPose: "relaxed",
       startedAt: performance.now(),
     };
-
-    function setHandPose(side: "left" | "right", poseName: string) {
-      qa(side === "left" ? ".hand-left-pose" : ".hand-right-pose").forEach((group) => {
-        group.classList.toggle("hidden", group.dataset.hand !== poseName);
-      });
-      if (side === "right") state.rightHandPose = poseName;
-    }
-
-    function getHandPose(side: "left" | "right") {
-      const el = host!.querySelector<SVGUseElement>((side === "left" ? ".hand-left-pose" : ".hand-right-pose") + ":not(.hidden)");
-      return el?.dataset.hand ?? "relaxed";
-    }
 
     function applyPosePreset(presetKey: string) {
       const preset = POSE_PRESETS[presetKey] ?? POSE_PRESETS.idle;
       springs.armLShoulder.set(preset.armL[0]);
       springs.armLElbow.set(preset.armL[1]);
-      springs.armLWrist.set(preset.armL[2]);
       springs.armRShoulder.set(preset.armR[0]);
       springs.armRElbow.set(preset.armR[1]);
-      springs.armRWrist.set(preset.armR[2]);
       springs.browLift.set(preset.brow);
-      setHandPose("left", preset.handL);
-      setHandPose("right", preset.handR);
       rig.eyesNormal?.classList.toggle("hidden", preset.eyes !== "normal");
       rig.eyesHappy?.classList.toggle("hidden", preset.eyes !== "happy");
       rig.eyesShock?.classList.toggle("hidden", preset.eyes !== "shock");
@@ -311,10 +285,8 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
         py: springs.pupilY.step(dt),
         lSh: springs.armLShoulder.step(dt) + amp(Math.sin(t * 2.4) * (talking ? 7 : 2.2)),
         lEl: springs.armLElbow.step(dt) + amp(Math.cos(t * 3.1) * (happy ? 12 : 2.5)),
-        lWr: springs.armLWrist.step(dt),
         rSh: springs.armRShoulder.step(dt) - amp(steady ? 0 : Math.sin(t * 2.4 + 0.6) * (talking ? 7 : 2.2)),
         rEl: springs.armRElbow.step(dt) - amp(steady ? 0 : Math.cos(t * 3.1 + 0.6) * (happy ? 12 : 2.5)),
-        rWr: springs.armRWrist.step(dt),
         mO: springs.mouthOpen.step(dt),
         mW: springs.mouthWidth.step(dt),
         bLift: springs.browLift.step(dt),
@@ -359,15 +331,6 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
       rig.tubeRW?.setAttribute("d", rTube);
       rig.tubeRFD?.setAttribute("d", rTube);
       rig.tubeRFW?.setAttribute("d", rTube);
-      rig.handL?.setAttribute(
-        "transform",
-        `translate(66, 182) rotate(${v.lSh.toFixed(2)}) translate(-25, 4) rotate(${v.lEl.toFixed(2)}) translate(-26, 2) rotate(${v.lWr.toFixed(2)})`,
-      );
-      const rMirror = state.rightHandPose === "thinking" ? "" : "scale(-1, 1) ";
-      rig.handR?.setAttribute(
-        "transform",
-        `translate(254, 182) rotate(${v.rSh.toFixed(2)}) translate(25, 4) rotate(${v.rEl.toFixed(2)}) translate(26, 2) ${rMirror}rotate(${(-v.rWr).toFixed(2)})`,
-      );
       renderParametricMouth(v.mO, v.mW);
     }
 
@@ -454,25 +417,6 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
         setExpression("normal");
       }
     }
-
-    function cycleHand(side: "left" | "right") {
-      const current = getHandPose(side);
-      const next = HAND_POSES[(HAND_POSES.indexOf(current) + 1) % HAND_POSES.length];
-      setHandPose(side, next);
-    }
-
-    const onHandLeft = (event: Event) => {
-      if (!interactive) return;
-      event.stopPropagation();
-      cycleHand("left");
-    };
-    const onHandRight = (event: Event) => {
-      if (!interactive) return;
-      event.stopPropagation();
-      cycleHand("right");
-    };
-    rig.handL?.addEventListener("click", onHandLeft);
-    rig.handR?.addEventListener("click", onHandRight);
 
     let lastFrame = performance.now();
     let frameId = 0;
@@ -594,12 +538,10 @@ export function HeiserMascot({ mode = "idle", className = "", interactive = true
       observer?.disconnect();
       host.removeEventListener("pointermove", onPointerMove);
       host.removeEventListener("pointerleave", onPointerLeave);
-      rig.handL?.removeEventListener("click", onHandLeft);
-      rig.handR?.removeEventListener("click", onHandRight);
     };
     // HEISER_SVG is constant in production; in dev, a hot-reload replaces the
     // innerHTML without remounting, so the rig must re-initialize with it.
-  }, [interactive, HEISER_SVG]);
+  }, [HEISER_SVG]);
 
   useEffect(() => {
     apiRef.current?.(mode);

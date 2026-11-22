@@ -15,7 +15,9 @@ from app.schemas import ChatRequest
 from app.services.ai.qwen_provider import complete_qwen, stream_qwen
 from app.services.rag.knowledge import (
     build_demo_answer,
+    build_guidance_answer,
     build_social_answer,
+    detect_guidance_intent,
     detect_social_intent,
     retrieve_with_trace,
     select_demo_hits,
@@ -125,14 +127,18 @@ async def chat_stream(payload: ChatRequest, actor: Actor = Depends(get_actor)) -
     )
     history = _history(conversation_id)
     social_intent = detect_social_intent(question, payload.language)
-    if social_intent:
+    guidance_intent = None if social_intent else detect_guidance_intent(question)
+    if social_intent or guidance_intent:
         hits, retrieval_trace = [], {
-            "strategy": "social",
-            "social_intent": social_intent,
+            "strategy": "social" if social_intent else guidance_intent,
             "answerable": True,
         }
+        if social_intent:
+            retrieval_trace["social_intent"] = social_intent
+            demo_answer = build_social_answer(social_intent, payload.language)
+        else:
+            demo_answer = build_guidance_answer(guidance_intent or "", payload.language)
         context = ""
-        demo_answer = build_social_answer(social_intent, payload.language)
         citations = []
     else:
         hits, retrieval_trace = retrieve_with_trace(question, language=payload.language)
@@ -149,7 +155,7 @@ async def chat_stream(payload: ChatRequest, actor: Actor = Depends(get_actor)) -
         parts: list[str] = []
         mode = (
             "demo"
-            if social_intent or not AI_CONFIGURED
+            if social_intent or guidance_intent or not AI_CONFIGURED
             else "qwen"
             if hits
             else "no-evidence"
@@ -225,13 +231,17 @@ async def chat_once(payload: ChatRequest, actor: Actor = Depends(get_actor)) -> 
     )
     history = _history(conversation_id)
     social_intent = detect_social_intent(question, payload.language)
-    if social_intent:
+    guidance_intent = None if social_intent else detect_guidance_intent(question)
+    if social_intent or guidance_intent:
         hits, retrieval_trace = [], {
-            "strategy": "social",
-            "social_intent": social_intent,
+            "strategy": "social" if social_intent else guidance_intent,
             "answerable": True,
         }
-        answer = build_social_answer(social_intent, payload.language)
+        if social_intent:
+            retrieval_trace["social_intent"] = social_intent
+            answer = build_social_answer(social_intent, payload.language)
+        else:
+            answer = build_guidance_answer(guidance_intent or "", payload.language)
         mode = "demo"
         citations = []
     else:

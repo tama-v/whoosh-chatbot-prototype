@@ -18,6 +18,7 @@ import {
   Waves,
 } from "lucide-react";
 import { initials, useAuth } from "@/lib/auth";
+import { KnowledgeStats } from "./knowledge-stats";
 import { WhooshMark, Wordmark } from "./whoosh-mark";
 
 const NAV = [
@@ -100,7 +101,9 @@ export function WorkspaceShell({
             </span>
             <div>
               <p className="text-[14px] font-semibold leading-tight text-ink">Heiser</p>
-              <p className="text-[13px] text-muted">12 dokumen knowledge demo</p>
+              <p className="text-[13px] text-muted">
+                <KnowledgeStats variant="docs" /> knowledge demo
+              </p>
             </div>
           </div>
           <Link

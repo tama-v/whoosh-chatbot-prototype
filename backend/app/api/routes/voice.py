@@ -2,7 +2,7 @@ import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 
-from app.core.config import MAX_AUDIO_BYTES, VOICE_NOTICE
+from app.core.config import MAX_AUDIO_BYTES, VOICE_NOTICE, VOICE_NOTICE_NO_SAPI
 from app.schemas import VoiceRequest
 from app.services.voice import (
     VoiceUnavailable,
@@ -22,7 +22,7 @@ def voice_health() -> dict:
     payload.update(
         {
             "mode": "qwen" if payload["tts_configured"] or payload["asr_configured"] else "demo",
-            "notice": VOICE_NOTICE,
+            "notice": VOICE_NOTICE if payload["demo_tts"] else VOICE_NOTICE_NO_SAPI,
         }
     )
     return payload

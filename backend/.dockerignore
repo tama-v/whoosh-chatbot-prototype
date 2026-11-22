@@ -1,0 +1,15 @@
+.venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Runtime data stays on the host: SQLite DB, uploads, generated voices,
+# and admin_bootstrap.txt (a secret; must never be baked into an image).
+data
+uploads
+
+.env
+*.log

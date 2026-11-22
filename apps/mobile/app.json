@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "Whoosh AI",
+    "slug": "whoosh-ai",
+    "scheme": "whooshai",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#730F1B"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.whooshai.prototype",
+      "infoPlist": {
+        "NSMicrophoneUsageDescription": "Whoosh AI memakai mikrofon untuk mengubah pertanyaan suara menjadi teks."
+      }
+    },
+    "android": {
+      "package": "com.whooshai.prototype",
+      "permissions": ["RECORD_AUDIO"],
+      "adaptiveIcon": {
+        "backgroundColor": "#730F1B",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "bundler": "metro",
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Izinkan Whoosh AI menggunakan mikrofon untuk pertanyaan suara."
+        }
+      ]
+    ],
+    "extra": {
+      "demoNotice": "Prototipe mandiri Whoosh AI. Bukan layanan resmi operator."
+    }
+  }
+}

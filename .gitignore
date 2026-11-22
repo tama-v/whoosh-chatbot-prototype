@@ -1,0 +1,36 @@
+# Dependencies and builds
+node_modules/
+.next/
+out/
+.expo/
+dist/
+*.tsbuildinfo
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Runtime data and secrets (never commit)
+.env
+.env.local
+backend/data/
+backend/uploads/
+backend/.venv/
+**/admin_bootstrap.txt
+
+# Local tooling, agent skills and reference material (not part of the app export)
+.tools/
+.taste-skill/
+.agents/
+agent/
+.claude/
+_ref/
+data/
+skills-lock.json
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,342 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-inter), "Segoe UI", system-ui, -apple-system, sans-serif;
+
+  --color-maroon: #961826;
+  --color-wine: #730f1b;
+  --color-scarlet: #b81b2c;
+  --color-cream: #f7f2eb;
+  --color-paper: #fffdfa;
+  --color-ink: #2d1719;
+  --color-muted: #8a6f68;
+  --color-line: #eadfd7;
+  --color-line-strong: #ddcbc0;
+  --color-blush: #fdf1f2;
+  --color-sand: #f1e7dd;
+  --color-mint: #e8f3ec;
+  --color-warn: #fff6e5;
+
+  --shadow-soft: 0 24px 60px -34px rgba(115, 15, 27, 0.27);
+  --shadow-lift: 0 18px 38px -26px rgba(115, 15, 27, 0.34);
+  --radius-4xl: 2rem;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(184, 27, 44, 0.16);
+  color: var(--color-wine);
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+:focus-visible {
+  outline: 2px solid rgba(184, 27, 44, 0.45);
+  outline-offset: 2px;
+}
+
+@layer components {
+  .ui-card {
+    @apply rounded-[20px] border border-line/75 bg-paper;
+    box-shadow: var(--shadow-soft);
+  }
+
+  .ui-card-flat {
+    @apply rounded-2xl border border-line/75 bg-paper;
+  }
+
+  .ui-btn,
+  .ui-btn-primary,
+  .ui-btn-dark,
+  .ui-btn-ghost,
+  .ui-btn-soft,
+  .ui-btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all duration-200 hover:-translate-y-px active:translate-y-0 disabled:opacity-50;
+  }
+
+  .ui-btn-primary {
+    @apply bg-maroon text-white shadow-[0_10px_20px_-14px_rgba(115,15,27,0.72)] hover:bg-wine;
+  }
+
+  .ui-btn-dark {
+    @apply bg-ink text-white hover:bg-wine;
+  }
+
+  .ui-btn-ghost {
+    @apply border border-line-strong/80 bg-paper text-ink hover:border-maroon/30 hover:bg-cream;
+  }
+
+  .ui-btn-soft {
+    @apply bg-blush text-maroon hover:bg-[#fbe4e7];
+  }
+
+  .ui-btn-secondary {
+    @apply border border-line-strong/80 bg-cream/60 text-ink hover:border-maroon/30 hover:bg-cream;
+  }
+
+  .ui-chip {
+    @apply inline-flex items-center gap-1.5 rounded-lg border border-line bg-paper px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:border-line-strong hover:text-ink;
+  }
+
+  .field {
+    @apply w-full rounded-xl border border-line bg-paper px-4 py-3 text-[15px] text-ink outline-none transition placeholder:text-muted/60 focus:border-scarlet/45 focus:ring-4 focus:ring-scarlet/10;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] font-medium text-muted;
+  }
+
+  .demo-badge {
+    @apply inline-flex items-center gap-1.5 rounded-lg border border-amber-200/80 bg-warn px-2.5 py-1 text-[13px] font-medium text-amber-900;
+  }
+}
+
+/* ---------- Heiser character ---------- */
+.heiser-embed {
+  width: 100%;
+}
+
+.heiser-embed svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.heiser-embed .hidden {
+  display: none !important;
+}
+
+.heiser-embed .headlamp-led-glow,
+.heiser-embed .headlamp-led-shimmer {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes headlampGlowPulse {
+  0%, 100% { opacity: 0.12; }
+  50% { opacity: 0.62; }
+}
+
+@keyframes headlampShimmer {
+  0% { transform: translateY(24px); opacity: 0; }
+  30% { opacity: 0.65; }
+  70% { opacity: 0.65; }
+  100% { transform: translateY(-24px); opacity: 0; }
+}
+
+.heiser-embed .leds-active .headlamp-led-glow {
+  animation: headlampGlowPulse 1.15s ease-in-out infinite;
+}
+.heiser-embed .leds-active .headlamp-led-shimmer {
+  animation: headlampShimmer 1.5s ease-in-out infinite;
+}
+.heiser-embed .leds-thinking .headlamp-led-glow {
+  animation: headlampGlowPulse 2.1s ease-in-out infinite;
+}
+.heiser-embed .leds-thinking .headlamp-led-shimmer {
+  animation: headlampShimmer 2.4s ease-in-out infinite;
+}
+
+.heiser-embed .arm-click {
+  cursor: pointer;
+}
+
+/* ---------- Motion ---------- */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: floatY 6.5s ease-in-out infinite;
+}
+
+@keyframes pulseRing {
+  0% { transform: scale(0.94); opacity: 0.5; }
+  70% { transform: scale(1.12); opacity: 0; }
+  100% { transform: scale(1.12); opacity: 0; }
+}
+
+.voice-ring {
+  position: relative;
+}
+.voice-ring::before {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 14px;
+  border: 2px solid rgba(150, 24, 38, 0.4);
+  animation: pulseRing 1.6s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+  pointer-events: none;
+}
+
+@keyframes waveBar {
+  0%, 100% { transform: scaleY(0.28); }
+  50% { transform: scaleY(1); }
+}
+
+.wave-bar {
+  transform-origin: center;
+  animation: waveBar 0.9s ease-in-out infinite;
+}
+
+@keyframes popIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.msg-in {
+  animation: popIn 0.24s ease-out both;
+}
+
+@keyframes typingDot {
+  0%, 80%, 100% { opacity: 0.25; transform: translateY(0); }
+  40% { opacity: 1; transform: translateY(-3px); }
+}
+
+.typing-dot {
+  animation: typingDot 1.15s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.14s; }
+.typing-dot:nth-child(3) { animation-delay: 0.28s; }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-up {
+  animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.delay-1 { animation-delay: 0.08s; }
+.delay-2 { animation-delay: 0.16s; }
+.delay-3 { animation-delay: 0.24s; }
+
+@keyframes orbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-orbit {
+  animation: orbit 26s linear infinite;
+}
+
+/* ---------- Texture ---------- */
+.grain {
+  background-image:
+    radial-gradient(circle at 20% 15%, rgba(184, 27, 44, 0.07), transparent 34%),
+    radial-gradient(circle at 82% 8%, rgba(150, 24, 38, 0.07), transparent 30%),
+    radial-gradient(circle at 70% 82%, rgba(184, 27, 44, 0.05), transparent 32%);
+}
+
+.grid-fade {
+  background-image:
+    linear-gradient(to right, rgba(150, 24, 38, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(150, 24, 38, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 45%, black 30%, transparent 78%);
+}
+
+.dot-grid {
+  background-image: radial-gradient(rgba(150, 24, 38, 0.16) 1px, transparent 1px);
+  background-size: 18px 18px;
+}
+
+/* ---------- Scrollbars ---------- */
+.scroll-area {
+  scrollbar-width: thin;
+  scrollbar-color: #ddcbc0 transparent;
+}
+.scroll-area::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.scroll-area::-webkit-scrollbar-thumb {
+  background: #ddcbc0;
+  border-radius: 999px;
+}
+.scroll-area::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* ---------- Answer typography ---------- */
+.prose-heiser {
+  font-size: 0.95rem;
+  line-height: 1.72;
+  color: #3c2426;
+}
+.prose-heiser p + p {
+  margin-top: 0.65rem;
+}
+.prose-heiser strong {
+  font-weight: 650;
+  color: var(--color-ink);
+}
+.prose-heiser ul,
+.prose-heiser ol {
+  margin: 0.55rem 0 0.2rem;
+  padding-left: 1.15rem;
+  display: grid;
+  gap: 0.32rem;
+}
+.prose-heiser ul {
+  list-style: disc;
+}
+.prose-heiser ol {
+  list-style: decimal;
+}
+.prose-heiser li::marker {
+  color: rgba(184, 27, 44, 0.75);
+}
+.prose-heiser a {
+  color: var(--color-scarlet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

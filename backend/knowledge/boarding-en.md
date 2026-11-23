@@ -1,4 +1,4 @@
-# Whoosh Boarding Guide (Demo Document)
+# Whoosh Boarding Guide
 
 > Sample document for the Whoosh AI prototype. Not an official operator document. Always verify with official operator channels.
 

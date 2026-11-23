@@ -1,4 +1,5 @@
 import json
+import logging
 import sqlite3
 import uuid
 from contextlib import contextmanager
@@ -6,6 +7,8 @@ from datetime import datetime, timedelta, timezone
 from typing import Any, Iterator
 
 from app.core.config import DB_PATH, DEMO_USER_ID
+
+logger = logging.getLogger("whoosh_ai.db")
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS documents (
@@ -199,6 +202,14 @@ def init_db() -> None:
     from app.services.rag.knowledge import index_bundled_knowledge
 
     index_bundled_knowledge()
+    from app.services.rag import vector_store
+
+    try:
+        vector_store.ensure_ready()
+        with get_conn() as conn:
+            vector_store.sync_from_sqlite(conn)
+    except Exception as exc:
+        logger.warning("Sinkronisasi pgvector saat startup dilewati: %s", exc)
     with get_conn() as conn:
         _seed_conversations(conn)
         _seed_complaints(conn)

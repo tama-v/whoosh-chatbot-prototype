@@ -151,7 +151,7 @@ export function Composer({
 
       <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-1 px-2">
         <p className="text-[12.5px] leading-relaxed text-muted/70">
-          Heiser adalah AI demo dan bisa keliru. Verifikasi informasi resmi di kanal operator.
+          Heiser bisa keliru. Verifikasi informasi resmi di kanal operator.
           <span className="hidden sm:inline"> · Enter untuk kirim</span>
         </p>
         <label className="flex shrink-0 items-center gap-1 rounded-lg border border-line/70 bg-paper px-1.5 py-0.5 text-[12.5px] font-medium text-muted transition-colors hover:border-maroon/25 hover:text-maroon">
@@ -164,8 +164,8 @@ export function Composer({
             aria-label="Sumber suara jawaban"
             title="Pilih sumber suara jawaban"
           >
-            <option value="auto">Suara server</option>
-            <option value="browser">Suara browser</option>
+            <option value="auto">Suara standar</option>
+            <option value="browser">Suara perangkat</option>
           </select>
         </label>
       </div>

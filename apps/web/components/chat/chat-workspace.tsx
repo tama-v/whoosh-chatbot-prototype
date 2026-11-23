@@ -29,8 +29,6 @@ import type {
   ChatMessage,
   Citation,
   ConversationSummary,
-  KnowledgeDocument,
-  VoiceHealth,
 } from "@/lib/types";
 import { AssistantPanel, type VoiceUiState } from "./assistant-panel";
 import { Composer } from "./composer";
@@ -52,7 +50,6 @@ export function ChatWorkspace() {
   const [input, setInput] = useState("");
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ConversationSummary[]>([]);
-  const [documents, setDocuments] = useState<KnowledgeDocument[]>([]);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [loadingConversationId, setLoadingConversationId] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
@@ -64,8 +61,6 @@ export function ChatWorkspace() {
   const [voiceSupported, setVoiceSupported] = useState(false);
   const [recorderSupported, setRecorderSupported] = useState(false);
   const [speechEngine, setSpeechEngine] = useState<SpeechEngine>("auto");
-  const [voiceHealth, setVoiceHealth] = useState<VoiceHealth | null>(null);
-  const [aiMode, setAiMode] = useState<"qwen" | "demo" | null>(null);
   const [connection, setConnection] = useState<"checking" | "online" | "offline">("checking");
   const [toast, setToast] = useState<string | null>(null);
 
@@ -101,12 +96,8 @@ export function ChatWorkspace() {
     let cancelled = false;
     (async () => {
       try {
-        const health = await api.health();
-        if (!cancelled) {
-          setAiMode(health.mode);
-          setVoiceHealth(health.voice);
-          setConnection("online");
-        }
+        await api.health();
+        if (!cancelled) setConnection("online");
       } catch {
         if (!cancelled) setConnection("offline");
       }
@@ -115,12 +106,6 @@ export function ChatWorkspace() {
         if (!cancelled) setConversations(data.items);
       } catch {
         // handled by connection banner
-      }
-      try {
-        const data = await api.documents();
-        if (!cancelled) setDocuments(data.items);
-      } catch {
-        // knowledge list is optional in the side panel
       }
       if (!cancelled) {
         setVoiceSupported(speechRecognitionSupported());
@@ -207,7 +192,7 @@ export function ChatWorkspace() {
     showToast(
       next === "browser"
         ? "Jawaban dibacakan dengan suara browser."
-        : "Jawaban dibacakan dengan suara server; browser dipakai bila server tidak tersedia.",
+        : "Jawaban dibacakan dengan suara standar; browser dipakai bila layanan tidak tersedia.",
     );
   };
 
@@ -246,7 +231,7 @@ export function ChatWorkspace() {
             showToast(
               error instanceof Error
                 ? error.message
-                : "Transkripsi server belum tersedia. Gunakan input teks.",
+                : "Transkripsi suara belum tersedia. Gunakan input teks.",
             );
           })
           .finally(() => setIsTranscribing(false));
@@ -485,13 +470,9 @@ export function ChatWorkspace() {
         },
         controller.signal,
       );
-    } catch (error) {
+    } catch {
       flushDeltas();
       if (controller.signal.aborted) return;
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : "Koneksi ke backend demo terputus.";
       setMessages((prev) =>
         prev.map((item) =>
           item.id === assistantId
@@ -499,14 +480,14 @@ export function ChatWorkspace() {
                 ...item,
                 content:
                   accumulated.trim() ||
-                  `Maaf, saya belum bisa mengambil jawaban dari backend demo.\n\n**Detail:** ${message}\n\nPastikan FastAPI berjalan di port 8000, lalu coba lagi.`,
+                  `Maaf, jawaban belum bisa dimuat. Silakan coba lagi sebentar lagi.`,
                 streaming: false,
                 citations,
               }
             : item,
         ),
       );
-      showToast("Backend demo tidak merespons. Periksa server FastAPI.");
+      showToast("Layanan belum merespons. Coba lagi sebentar lagi.");
     } finally {
       flushDeltas();
       setIsStreaming(false);
@@ -529,17 +510,6 @@ export function ChatWorkspace() {
     stopAudio();
     setLanguage(next);
   };
-
-  const voiceLabel = (() => {
-    if (speechEngine === "browser") return "Suara browser (Web Speech API)";
-    const serverEngine = voiceHealth?.languages?.[language];
-    if (serverEngine === "qwen") return "Qwen TTS · Embun";
-    if (serverEngine === "demo-sapi") return "Windows SAPI demo (Inggris)";
-    if (serverEngine === "browser") {
-      return language === "id" ? "Suara browser (Indonesia)" : "Suara browser (English)";
-    }
-    return "Suara server / browser";
-  })();
 
   const voiceState: VoiceUiState = isListening
     ? "listening"
@@ -578,20 +548,7 @@ export function ChatWorkspace() {
                 </p>
                 <p className="flex items-center gap-1.5 truncate text-[13px] font-medium text-muted">
                   <span className={`h-1.5 w-1.5 rounded-full ${connection === "offline" ? "bg-amber-500" : "bg-emerald-500"}`} />
-                  {connection === "offline" ? (
-                    "Backend demo offline"
-                  ) : (
-                    <>
-                      <span className="sm:hidden">Mode demo</span>
-                      <span className="hidden sm:inline">
-                        {aiMode === "qwen"
-                          ? "Qwen · knowledge base"
-                          : documents.length > 0
-                            ? `Demo · ${documents.length} dokumen`
-                            : "Demo · knowledge base"}
-                      </span>
-                    </>
-                  )}
+                  {connection === "offline" ? "Belum tersambung" : "Siap membantu"}
                 </p>
               </div>
             </div>
@@ -640,7 +597,7 @@ export function ChatWorkspace() {
           {connection === "offline" && (
             <div className="flex items-center gap-2 border-b border-amber-200/70 bg-warn px-4 py-2 text-[13px] font-medium text-amber-900">
               <ServerOff className="h-3.5 w-3.5 shrink-0" />
-              Backend demo belum tersambung. Jalankan FastAPI di port 8000.
+              Asisten belum tersambung. Periksa koneksi internet lalu coba lagi.
             </div>
           )}
 
@@ -684,7 +641,7 @@ export function ChatWorkspace() {
 
               <div className="flex items-center gap-2 pl-10 pt-1 text-[13px] font-medium text-muted/60">
                 <span className="h-px flex-1 bg-line/60" />
-                <span>Sumber demo · verifikasi kanal resmi</span>
+                <span>Jawaban bersifat informatif · verifikasi kanal resmi</span>
                 <span className="h-px flex-1 bg-line/60" />
               </div>
             </div>
@@ -719,9 +676,6 @@ export function ChatWorkspace() {
           onToggleVoiceMode={toggleVoiceMode}
           onToggleListening={isListening ? stopListening : startListening}
           onStopSpeaking={stopAudio}
-          documents={documents}
-          aiMode={aiMode}
-          voiceLabel={voiceLabel}
         />
       </div>
 

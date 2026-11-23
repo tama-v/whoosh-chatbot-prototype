@@ -2,10 +2,17 @@ from datetime import timedelta
 
 from fastapi import APIRouter, Depends, Query
 
-from app.core.config import AI_CONFIGURED
+from app.core.config import (
+    AI_CONFIGURED,
+    QWEN_CHAT_MODEL,
+    QWEN_EMBEDDING_MODEL,
+    QWEN_TTS_MODEL,
+    QWEN_ASR_MODEL,
+)
 from app.core.security import AuthUser, require_admin
 from app.database.db import get_conn, utcnow
 from app.services.rag.knowledge import refresh_embeddings, retrieval_stats, retrieve_with_trace
+from app.services.rag import vector_store
 from app.services.voice.service import health_payload as voice_health_payload
 
 router = APIRouter(
@@ -164,3 +171,21 @@ def admin_health(admin: AuthUser = Depends(require_admin)) -> dict:
         ok = conn.execute("SELECT 1").fetchone()
         version = conn.execute("SELECT MAX(version) AS v FROM schema_migrations").fetchone()["v"]
     return {"ok": bool(ok), "user_scope": admin.email, "schema_version": version}
+
+
+@router.get("/system")
+def admin_system(admin: AuthUser = Depends(require_admin)) -> dict:
+    """Detailed runtime diagnostics. Admin-only; never exposed to passengers."""
+    return {
+        "user_scope": admin.email,
+        "ai": {
+            "mode": "qwen" if AI_CONFIGURED else "demo",
+            "chat_model": QWEN_CHAT_MODEL if AI_CONFIGURED else None,
+            "embedding_model": QWEN_EMBEDDING_MODEL if AI_CONFIGURED else None,
+            "asr_model": QWEN_ASR_MODEL if AI_CONFIGURED else None,
+            "tts_model": QWEN_TTS_MODEL if AI_CONFIGURED else None,
+        },
+        "retrieval": retrieval_stats(),
+        "vector_store": vector_store.stats(),
+        "voice": voice_health_payload(),
+    }

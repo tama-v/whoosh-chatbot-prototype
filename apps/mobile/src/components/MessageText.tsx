@@ -82,7 +82,7 @@ export function CitationChips({ citations }: { citations: Citation[] }) {
       <View style={styles.citationHead}>
         <View style={styles.citationDot} />
         <AppText variant="tiny" style={styles.citationLabel}>
-          Sumber knowledge base
+          Sumber panduan
         </AppText>
       </View>
       <View style={styles.citationRow}>

@@ -1,4 +1,4 @@
-# Ketentuan Bagasi (Dokumen Demo)
+# Ketentuan Bagasi
 
 > Dokumen contoh untuk prototype Whoosh AI. Bukan dokumen resmi operator. Ketentuan bagasi harus diverifikasi pada tiket dan kanal resmi operator.
 

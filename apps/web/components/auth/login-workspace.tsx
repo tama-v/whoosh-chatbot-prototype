@@ -131,13 +131,12 @@ export function LoginWorkspace() {
             </div>
           ) : (
             <>
-              <p className="text-[13px] font-medium text-muted">Akun lokal Whoosh AI</p>
+              <p className="text-[13px] font-medium text-muted">Akun Whoosh AI</p>
               <h1 className="mt-2 text-[30px] font-bold leading-[1.1] tracking-[-0.035em] text-ink sm:text-[38px]">
                 Masuk untuk menyimpan percakapan.
               </h1>
               <p className="mt-3 max-w-md text-[15px] leading-relaxed text-muted">
-                Tamu tetap bisa chat. Masuk agar riwayat dan laporan terikat ke akunmu, atau
-                gunakan akun admin untuk mengelola knowledge base.
+                Tamu tetap bisa chat. Masuk agar riwayat dan laporan terikat ke akunmu.
               </p>
 
               <div className="mt-6 inline-flex rounded-xl border border-line bg-cream/70 p-1">
@@ -248,9 +247,7 @@ export function LoginWorkspace() {
               </form>
 
               <p className="mt-4 text-[13px] leading-relaxed text-muted">
-                Akun admin awal dibuat otomatis oleh backend saat pertama berjalan. Kredensialnya
-                tersimpan di folder data backend, bukan di frontend. Tidak ada data yang dikirim ke
-                sistem perusahaan.
+                Data akunmu hanya dipakai untuk pengalaman Whoosh AI ini.
               </p>
             </>
           )}
@@ -260,14 +257,14 @@ export function LoginWorkspace() {
           <div>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-white/20 px-3 py-1 text-[13px] font-medium text-rose-100/90">
               <ShieldCheck className="h-3.5 w-3.5" />
-              Sesi mandiri · tanpa layanan pihak ketiga
+              Sesi aman · data tetap di akunmu
             </span>
             <h2 className="mt-5 max-w-sm text-[28px] font-bold leading-[1.12] tracking-[-0.03em] sm:text-[34px]">
               Heiser tetap siap, riwayatmu sekarang punya pemilik.
             </h2>
             <p className="mt-3 max-w-sm text-[14px] leading-relaxed text-rose-100/75">
-              Login admin melindungi upload dokumen, pembaruan status laporan, dan diagnostik RAG.
-              Kata sandi di-hash dengan PBKDF2; sesi disimpan di server.
+              Masuk untuk menyimpan riwayat, melacak laporan, dan melanjutkan percakapan di
+              perangkat lain.
             </p>
           </div>
           <div className="mt-8 flex items-end justify-between gap-4">
@@ -275,7 +272,7 @@ export function LoginWorkspace() {
               <HeiserMascot mode="happy" />
             </div>
             <div className="grid flex-1 grid-cols-2 gap-2 text-[13px] text-rose-100/80">
-              {["Cookie HttpOnly", "Role admin", "Rate limit", "Data per akun"].map((item) => (
+              {["Riwayat tersimpan", "Laporan terlacak", "Data per akun", "Akses aman"].map((item) => (
                 <span key={item} className="rounded-xl border border-white/15 bg-white/5 px-3 py-2">
                   {item}
                 </span>

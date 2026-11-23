@@ -20,7 +20,7 @@ def _serialize(row: dict) -> dict:
 
 
 @router.get("/documents")
-def documents_list() -> dict:
+def documents_list(admin: AuthUser = Depends(require_admin)) -> dict:
     return {"items": [_serialize(row) for row in list_documents()], "demo": True}
 
 

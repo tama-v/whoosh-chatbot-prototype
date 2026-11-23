@@ -1,4 +1,4 @@
-# Lost Items (Demo Document)
+# Lost Items
 
 > Sample document for the Whoosh AI prototype. Not an official operator lost and found service.
 

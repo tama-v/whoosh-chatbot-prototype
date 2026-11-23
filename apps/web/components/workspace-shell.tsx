@@ -13,12 +13,10 @@ import {
   LogOut,
   MessageCircle,
   ShieldCheck,
-  Sparkles,
   UserRound,
   Waves,
 } from "lucide-react";
 import { initials, useAuth } from "@/lib/auth";
-import { KnowledgeStats } from "./knowledge-stats";
 import { WhooshMark, Wordmark } from "./whoosh-mark";
 
 const NAV = [
@@ -32,7 +30,6 @@ const MOBILE_NAV = [
   { href: "/", label: "Beranda", icon: House },
   { href: "/chat", label: "Chat", icon: MessageCircle },
   { href: "/complaints", label: "Laporan", icon: ClipboardList },
-  { href: "/admin", label: "Admin", icon: LayoutDashboard },
 ];
 
 function isActive(pathname: string, href: string) {
@@ -67,7 +64,7 @@ export function WorkspaceShell({
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-[264px] flex-col border-r border-line/75 bg-paper/95 px-5 py-6 lg:flex">
         <Wordmark />
         <div className="mt-8 space-y-6">
-          {["Penumpang", "Admin"].map((group) => (
+          {(user?.role === "admin" ? ["Penumpang", "Admin"] : ["Penumpang"]).map((group) => (
             <div key={group}>
               <p className="mb-2 px-3 text-[13px] font-medium text-muted/80">{group}</p>
               <nav className="space-y-1">
@@ -101,9 +98,7 @@ export function WorkspaceShell({
             </span>
             <div>
               <p className="text-[14px] font-semibold leading-tight text-ink">Heiser</p>
-              <p className="text-[13px] text-muted">
-                <KnowledgeStats variant="docs" /> knowledge demo
-              </p>
+              <p className="text-[13px] text-muted">Asisten perjalanan</p>
             </div>
           </div>
           <Link
@@ -117,12 +112,9 @@ export function WorkspaceShell({
 
         <div className="mt-auto space-y-3 pt-6">
           <div className="rounded-[20px] border border-line/75 bg-cream/70 px-3.5 py-3">
-            <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-              <Sparkles className="h-3.5 w-3.5 text-maroon" />
-              Mode demo
-            </p>
+            <p className="text-[13px] font-semibold text-ink">Prototipe mandiri</p>
             <p className="mt-1 text-[13px] leading-relaxed text-muted">
-              Prototipe mandiri. Jawaban dari knowledge base demo, bukan layanan resmi operator.
+              Bukan layanan resmi operator. Verifikasi info penting di kanal resmi.
             </p>
           </div>
           {loading ? (
@@ -185,17 +177,15 @@ export function WorkspaceShell({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="demo-badge hidden md:inline-flex">
-              <Sparkles className="h-3 w-3" />
-              Demo mode
-            </span>
-            <Link
-              href="/admin"
-              className="hidden h-8 items-center gap-1.5 rounded-lg border border-line bg-paper px-3 text-[13px] font-medium text-ink transition-colors hover:border-maroon/30 hover:bg-cream sm:flex"
-            >
-              <ShieldCheck className="h-3.5 w-3.5 text-maroon" />
-              Admin
-            </Link>
+            {user?.role === "admin" && (
+              <Link
+                href="/admin"
+                className="hidden h-8 items-center gap-1.5 rounded-lg border border-line bg-paper px-3 text-[13px] font-medium text-ink transition-colors hover:border-maroon/30 hover:bg-cream sm:flex"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-maroon" />
+                Admin
+              </Link>
+            )}
             {user ? (
               <details className="group relative">
                 <summary className="flex h-8 w-8 cursor-pointer list-none items-center justify-center rounded-full bg-maroon text-[13px] font-semibold text-white ring-2 ring-cream [&::-webkit-details-marker]:hidden">
@@ -260,7 +250,10 @@ export function WorkspaceShell({
 
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-line/80 bg-paper/95 px-3 pb-[max(8px,env(safe-area-inset-bottom))] pt-2 backdrop-blur-xl lg:hidden">
         <div className="mx-auto flex max-w-md items-stretch justify-between">
-          {MOBILE_NAV.map((item) => {
+          {(user?.role === "admin"
+            ? [...MOBILE_NAV, { href: "/admin", label: "Admin", icon: LayoutDashboard }]
+            : MOBILE_NAV
+          ).map((item) => {
             const Icon = item.icon;
             const active = isActive(pathname, item.href);
             return (

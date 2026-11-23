@@ -42,7 +42,14 @@ def _tts_url() -> str:
 
 QWEN_TTS_URL = _tts_url()
 
+VECTOR_STORE_MODE = os.getenv("VECTOR_STORE", "auto").strip().lower() or "auto"
+PGVECTOR_DSN = os.getenv(
+    "PGVECTOR_DSN", "postgresql://whoosh:whoosh@127.0.0.1:15432/whoosh"
+).strip()
+VECTOR_DIMS = max(64, int(os.getenv("VECTOR_DIMS", "1024")))
+
 AI_CONFIGURED = bool(DASHSCOPE_API_KEY and QWEN_BASE_URL)
+SOCIAL_LLM_TIMEOUT = max(5.0, float(os.getenv("SOCIAL_LLM_TIMEOUT", "40")))
 EMBEDDINGS_CONFIGURED = bool(AI_CONFIGURED and QWEN_EMBEDDING_MODEL)
 VOICE_ASR_CONFIGURED = bool(AI_CONFIGURED and QWEN_ASR_MODEL)
 VOICE_TTS_CONFIGURED = bool(AI_CONFIGURED and QWEN_TTS_MODEL and QWEN_TTS_URL)

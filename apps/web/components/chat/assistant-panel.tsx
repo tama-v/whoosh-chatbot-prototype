@@ -3,16 +3,12 @@
 import Link from "next/link";
 import {
   ArrowUpRight,
-  BookOpen,
   ClipboardList,
-  FileText,
   Mic,
-  Sparkles,
   Square,
   Volume2,
 } from "lucide-react";
 import { HeiserMascot, type HeiserMode } from "@/components/heiser/heiser-mascot";
-import type { KnowledgeDocument } from "@/lib/types";
 
 export type VoiceUiState = "idle" | "listening" | "transcribing" | "thinking" | "speaking";
 
@@ -33,9 +29,6 @@ export function AssistantPanel({
   onToggleVoiceMode,
   onToggleListening,
   onStopSpeaking,
-  documents,
-  aiMode,
-  voiceLabel,
 }: {
   mode: HeiserMode;
   voiceState: VoiceUiState;
@@ -45,9 +38,6 @@ export function AssistantPanel({
   onToggleVoiceMode: () => void;
   onToggleListening: () => void;
   onStopSpeaking: () => void;
-  documents: KnowledgeDocument[];
-  aiMode: "qwen" | "demo" | null;
-  voiceLabel: string;
 }) {
   const copy = STATE_COPY[voiceState];
   const active = voiceState !== "idle";
@@ -61,27 +51,22 @@ export function AssistantPanel({
           <div className="relative flex items-center justify-between">
             <span className="inline-flex items-center gap-1.5 rounded-lg border border-line/70 bg-paper/85 px-2.5 py-1 text-[13px] font-medium text-ink">
               <span className={`h-1.5 w-1.5 rounded-full ${active ? "bg-maroon" : "bg-emerald-500"}`} />
-              {aiMode === "qwen" ? "Qwen aktif" : "Mode demo"}
+              Siap membantu
             </span>
-            <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={onToggleVoiceMode}
-                aria-pressed={voiceMode}
-                aria-label="Bacakan jawaban otomatis"
-                className={`flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[13px] font-medium transition-colors xl:hidden ${
-                  voiceMode
-                    ? "border-maroon bg-maroon text-white"
-                    : "border-line bg-paper/80 text-muted"
-                }`}
-              >
-                <Volume2 className="h-3 w-3" />
-                Auto-baca
-              </button>
-              <span className="rounded-lg border border-line/60 bg-paper/60 px-2 py-0.5 text-[13px] font-medium text-muted">
-                2D demo
-              </span>
-            </div>
+            <button
+              type="button"
+              onClick={onToggleVoiceMode}
+              aria-pressed={voiceMode}
+              aria-label="Bacakan jawaban otomatis"
+              className={`flex h-7 items-center gap-1 rounded-lg border px-2.5 text-[13px] font-medium transition-colors xl:hidden ${
+                voiceMode
+                  ? "border-maroon bg-maroon text-white"
+                  : "border-line bg-paper/80 text-muted"
+              }`}
+            >
+              <Volume2 className="h-3 w-3" />
+              Auto-baca
+            </button>
           </div>
 
           <div className="relative mt-1 flex items-center gap-2 sm:gap-4 xl:flex-col xl:gap-0">
@@ -150,9 +135,7 @@ export function AssistantPanel({
               <p className="text-[13px] font-semibold text-ink">
                 {isListening ? "Mendengarkan suara…" : isSpeaking ? "Audio sedang diputar" : "Push-to-talk"}
               </p>
-              <p className="truncate text-[13px] text-muted" title={voiceLabel}>
-                {voiceLabel}
-              </p>
+              <p className="truncate text-[13px] text-muted">Suara perangkat</p>
             </div>
             {isSpeaking && (
               <button
@@ -165,31 +148,6 @@ export function AssistantPanel({
             )}
           </div>
         </div>
-      </div>
-
-      <div className="ui-card-flat hidden shrink-0 p-4 xl:block">
-        <div className="flex items-center justify-between">
-          <p className="flex items-center gap-1.5 text-[13px] font-semibold text-ink">
-            <BookOpen className="h-3.5 w-3.5 text-maroon" />
-            Knowledge base
-          </p>
-          <Link href="/admin#knowledge" className="text-[13px] font-medium text-maroon hover:underline">
-            Kelola
-          </Link>
-        </div>
-        <div className="mt-3 space-y-2">
-          {(documents.length ? documents.slice(0, 3) : [{ id: "loading-1", title: "Memuat dokumen…", chunk_count: 0 }, { id: "loading-2", title: "Panduan boarding", chunk_count: 0 }, { id: "loading-3", title: "Ketentuan bagasi", chunk_count: 0 }]).map((doc) => (
-            <div key={doc.id} className="flex items-center gap-2 rounded-lg border border-line/70 bg-cream/50 px-2.5 py-2">
-              <FileText className="h-3.5 w-3.5 shrink-0 text-maroon/65" />
-              <p className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink/85">{doc.title}</p>
-              <span className="shrink-0 text-[13px] text-muted/75">{doc.chunk_count || "—"} chunk</span>
-            </div>
-          ))}
-        </div>
-        <p className="mt-2.5 flex items-start gap-1.5 text-[13px] leading-relaxed text-muted/80">
-          <Sparkles className="mt-0.5 h-3 w-3 shrink-0 text-maroon" />
-          Dokumen demo, bukan kebijakan resmi operator.
-        </p>
       </div>
 
       <div className="ui-card-flat hidden shrink-0 p-3 xl:block">

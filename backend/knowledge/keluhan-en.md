@@ -1,4 +1,4 @@
-# Drafting a Complaint (Demo Document)
+# Drafting a Complaint
 
 > Sample document for the Whoosh AI prototype. Reports in this prototype are an internal simulation and not official operator tickets.
 
@@ -20,4 +20,4 @@
 
 ## Simulated statuses
 
-The available statuses are submitted_to_demo_system, under_review, resolved, and closed. These only describe the demo flow inside this app and are not connected to operator systems.
+Report statuses are Submitted, Under review, Resolved, and Closed. These only describe the flow inside this app and are not connected to operator systems.

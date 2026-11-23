@@ -1,10 +1,12 @@
 # Dependencies and builds
 node_modules/
 .next/
+.next-production/
 out/
 .expo/
 dist/
 *.tsbuildinfo
+.tmp-*.log
 
 # Python
 .venv/

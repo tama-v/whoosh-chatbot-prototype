@@ -1,4 +1,4 @@
-# Tickets, Changes, and Cancellations (Demo Document)
+# Tickets, Changes, and Cancellations
 
 > Sample document for the Whoosh AI prototype. Not an official operator document and not a ticketing system. All transactions must use official channels.
 

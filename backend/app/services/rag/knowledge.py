@@ -10,6 +10,7 @@ from typing import Any
 from app.core.config import KNOWLEDGE_DIR
 from app.database.db import get_conn, now_iso
 from app.database.migrations import fts_available, rebuild_fts
+from app.services.rag import vector_store
 from app.services.rag.embeddings import (
     HASHED_MODEL,
     cosine,
@@ -26,6 +27,7 @@ STOPWORDS = {
     "mohon", "ingin", "mau", "akan", "sudah", "belum", "tidak", "bukan", "ada", "juga",
     "atau", "kalau", "jika", "saat", "ketika", "oleh", "sebagai", "dalam", "tentang", "the",
     "and", "for", "with", "what", "how", "where", "when", "why", "who", "is", "are", "am",
+    "a", "an",
     "can", "could", "would", "should", "do", "does", "my", "your", "our", "about", "please",
     "tell", "give", "want", "need", "whoosh", "heiser",
     "there", "here", "this", "that", "these", "those", "was", "were", "been", "being", "have",
@@ -56,6 +58,11 @@ SYNONYMS = {
     "hilang": {"tertinggal", "lost"},
     "jadwal": {"schedule", "reschedule", "ubah", "perubahan"},
     "ubah": {"jadwal", "reschedule", "perubahan"},
+    "diubah": {"ubah", "jadwal", "perubahan", "reschedule"},
+    "mengubah": {"ubah", "jadwal", "perubahan", "reschedule"},
+    "ganti": {"ubah", "jadwal", "perubahan", "reschedule"},
+    "mengganti": {"ganti", "ubah", "jadwal", "perubahan"},
+    "diganti": {"ganti", "ubah", "jadwal", "perubahan"},
     "batal": {"pembatalan", "refund", "cancel"},
     "pembatalan": {"batal", "refund", "cancel"},
     "reschedule": {"schedule", "change", "jadwal"},
@@ -107,6 +114,8 @@ ACTION_TERMS = {
     "bawa", "beli", "bayar", "pesan", "ubah", "batal", "ganti", "naik", "turun", "ambil",
     "kirim", "hubungi", "lapor", "cari", "temukan", "terima", "pakai", "gunakan", "isi",
     "tanya", "minta", "datang", "pergi", "pulang", "masuk", "keluar", "buka", "tutup",
+    "izinkan", "diizinkan", "mengizinkan", "bolehkan", "dibolehkan", "diperbolehkan",
+    "perbolehkan", "bawaan",
 }
 # Size, age, and speed modifiers do not change which topic the question is about.
 MODIFIER_TERMS = {
@@ -119,7 +128,7 @@ RRF_K = 20
 
 SOCIAL_VOCAB = {
     "halo", "hai", "hi", "hello", "hey", "selamat", "pagi", "siang", "sore", "malam",
-    "apa", "kabar", "kabarmu", "kamu", "anda", "saya", "aku", "bisa", "bisakah", "dapat",
+    "apa", "kabar", "kabarmu", "hari", "kamu", "anda", "saya", "aku", "bisa", "bisakah", "dapat",
     "boleh", "kah", "bantu", "membantu", "bantulah", "tolong", "mohon", "dong", "ya",
     "kak", "min", "admin", "heiser", "siapa", "nama", "ini", "itu", "lakukan",
     "dilakukan", "kerjakan", "dikerjakan", "saja", "ada", "terima", "kasih", "makasih",
@@ -129,7 +138,43 @@ SOCIAL_VOCAB = {
     "would", "please", "help", "what", "who", "are", "is", "do", "does", "i", "my",
     "me", "your", "for", "of", "to", "it", "this", "that", "name", "goodbye",
     "test", "tes", "testing", "coba", "try", "ping", "p", "fitur", "fungsi",
+    "bot", "robot", "manusia", "human", "asisten",
+    "luar", "diluar", "topik", "tema", "bahasan", "tersebut", "sebelumnya", "tadi",
+    "detail", "detil", "contoh", "contohnya", "lanjut", "lanjutkan", "jawaban",
+    "jawabanmu", "pertanyaan", "pertanyaanmu", "lain", "lainnya", "ulangi", "konteks",
+    "outside", "topic", "scope", "aside", "apart",
 }
+
+SCOPE_RE = re.compile(
+    r"\b(?:di\s*luar|diluar|keluar\s+dari|selain|bukan)\s+(?:dari\s+|tentang\s+|soal\s+)?"
+    r"(?:topik|tema|bahasan|pembicaraan|panduan|konteks)\b"
+    r"|\b(?:topik|tema|bahasan|hal|pertanyaan)\s+(?:lain|lainnya)\b"
+    r"|\boff[\s-]?topic\b|\bout\s+of\s+scope\b"
+    r"|\boutside\s+(?:the|that|this)?\s*(?:topic|scope)\b"
+    r"|\b(?:bisa|bisakah|dapat)\s+(?:kah\s+)?(?:anda|kamu)\s+(?:membantu|bantu)\b"
+    r"[^.?!]{0,60}\b(?:tersebut|itu|tadi|di\s+atas)\b",
+    re.IGNORECASE,
+)
+
+FOLLOWUP_RE = re.compile(
+    r"\b(?:tersebut|tadi|sebelumnya|di\s+atas|jawabanmu|jawaban\s+kamu|jawabannya"
+    r"|lebih\s+(?:detail|jelas|lengkap)|contohnya|ulangi|jelaskan\s+lagi|maksudnya"
+    r"|maksud\s+kamu|lanjut(?:kan)?|yang\s+tadi)\b",
+    re.IGNORECASE,
+)
+
+META_FEEDBACK_RE = re.compile(
+    r"\b(?:tidak|tak|nggak|ngga|engga|gak|ga|kurang)\s+(?:nyambung|sambung|relevan)\b"
+    r"|\bjawab(?:an|annya|anmu|nya|mu)?\b[^.?!]{0,40}\b(?:salah|keliru|melenceng|meleset|ngawur|aneh)\b"
+    r"|\b(?:salah|keliru)\s+jawab\w*\b"
+    r"|\b(?:anda|kamu)\s+(?:tidak|nggak|gak|kurang)\s+(?:paham|mengerti)\b"
+    r"|\b(?:not\s+relevant|wrong\s+answer|missed\s+the\s+point|doesn'?t\s+make\s+sense)\b",
+    re.IGNORECASE,
+)
+
+SMALLTALK_RE = re.compile(
+    r"\bhow\s+are\s+(?:you|u)\b|\bhow'?s\s+it\s+going\b", re.IGNORECASE
+)
 
 SOCIAL_ANSWERS: dict[str, dict[str, str]] = {
     "greeting": {
@@ -149,26 +194,43 @@ SOCIAL_ANSWERS: dict[str, dict[str, str]] = {
             "Tentu, saya siap membantu. Saya bisa menjelaskan persiapan boarding, ketentuan "
             "bagasi, tiket dan perubahan jadwal, fasilitas stasiun, penanganan barang "
             "tertinggal, serta membantu menyusun laporan keluhan. Semua jawaban diambil dari "
-            "knowledge base lokal yang tersedia, bukan dari sistem operator.\n\n"
+            "panduan perjalanan yang tersedia, bukan dari sistem operator.\n\n"
             "Sebutkan topiknya, misalnya \u201cpersiapan boarding\u201d atau \u201cketentuan bagasi\u201d."
         ),
         "en": (
             "Of course, happy to help. I can explain boarding preparation, baggage rules, "
             "tickets and schedule changes, station facilities, lost item handling, and help "
-            "you draft a complaint report. All answers come from the local knowledge base, "
+            "you draft a complaint report. All answers come from the available travel guides, "
             "not from operator systems.\n\n"
             "Just name a topic, for example \u201cboarding preparation\u201d or \u201cbaggage rules\u201d."
+        ),
+    },
+    "scope": {
+        "id": (
+            "Bisa, tapi dengan batasan. Saya paling andal untuk topik perjalanan \u2014 "
+            "persiapan boarding, bagasi, tiket dan perubahan jadwal, fasilitas stasiun, "
+            "barang tertinggal, dan laporan keluhan \u2014 karena jawabannya bersumber dari "
+            "panduan perjalanan yang tersedia.\n\nDi luar topik itu saya belum punya sumber "
+            "yang bisa dipercaya, jadi saya akan bilang terus terang kalau informasinya "
+            "belum ada, bukan menebak. Ada topik tertentu yang ingin dibahas?"
+        ),
+        "en": (
+            "I can, within limits. I am most reliable on travel topics \u2014 boarding "
+            "preparation, baggage, tickets and schedule changes, station facilities, lost "
+            "items, and complaint reports \u2014 because those answers come from the available "
+            "travel guides.\n\nOutside that, I have no trustworthy source here, so I will say "
+            "so instead of guessing. Is there a specific topic you want to discuss?"
         ),
     },
     "identity": {
         "id": (
             "Saya Heiser, asisten perjalanan Whoosh AI. Saya menjawab pertanyaan seputar "
-            "perjalanan berdasarkan knowledge base lokal yang tersedia. Prototype ini tidak "
+            "perjalanan berdasarkan panduan perjalanan yang tersedia. Layanan ini tidak "
             "terhubung ke sistem operator."
         ),
         "en": (
             "I am Heiser, the Whoosh AI travel assistant. I answer travel questions from the "
-            "local knowledge base. This prototype is not connected to operator systems."
+            "available travel guides. This service is not connected to operator systems."
         ),
     },
     "thanks": {
@@ -179,11 +241,44 @@ SOCIAL_ANSWERS: dict[str, dict[str, str]] = {
         "id": "Sama-sama. Terima kasih sudah mampir, dan hati-hati di perjalanan.",
         "en": "You are welcome. Thanks for stopping by, and have a safe trip.",
     },
+    "smalltalk": {
+        "id": (
+            "Kabar saya baik, terima kasih sudah bertanya. Saya siap membantu perjalanan "
+            "Anda: persiapan boarding, ketentuan bagasi, tiket dan perubahan jadwal, "
+            "fasilitas stasiun, barang tertinggal, atau laporan keluhan.\n\n"
+            "Mau mulai dari mana?"
+        ),
+        "en": (
+            "I'm doing well, thanks for asking. I'm ready to help with your trip: boarding "
+            "preparation, baggage rules, tickets and schedule changes, station facilities, "
+            "lost items, or complaint reports.\n\nWhere would you like to start?"
+        ),
+    },
+    "meta": {
+        "id": (
+            "Maaf, jawaban saya tadi belum tepat sasaran. Saya hanya menjawab dari panduan "
+            "perjalanan yang tersedia, jadi pertanyaan yang terlalu umum atau di luar topik "
+            "bisa membuat saya meleset.\n\nSebutkan topiknya lebih spesifik — persiapan "
+            "boarding, bagasi, tiket dan perubahan jadwal, fasilitas stasiun, barang "
+            "tertinggal, atau laporan keluhan — nanti saya jawab dari sumber yang paling relevan."
+        ),
+        "en": (
+            "Sorry, my previous answer missed the mark. I can only answer from the available "
+            "travel guides, so a question that is too general or off-topic can throw me off.\n\n"
+            "Name the topic more specifically — boarding preparation, baggage, tickets and "
+            "schedule changes, station facilities, lost items, or complaint reports — and I "
+            "will answer from the most relevant source."
+        ),
+    },
 }
 
 
 def detect_social_intent(text: str, language: str = "id") -> str | None:
     """Return a social intent when the message contains no domain topic at all."""
+    if META_FEEDBACK_RE.search(text):
+        return "meta"
+    if SMALLTALK_RE.search(text):
+        return "smalltalk"
     tokens = TOKEN_RE.findall(text.lower())
     if not tokens or len(tokens) > 10:
         return None
@@ -191,12 +286,18 @@ def detect_social_intent(text: str, language: str = "id") -> str | None:
     # "apa yang bisa anda lakukan untuk saya" is not treated as a topic query.
     if any(token not in SOCIAL_VOCAB and token not in STOPWORDS for token in tokens):
         return None
+    if {"kabar", "kabarmu", "kabarnya"} & set(tokens):
+        return "smalltalk"
+    if SCOPE_RE.search(text):
+        return "scope"
     if {
         "kasih", "makasih", "terimakasih", "mksh", "thx", "tq", "trims", "syukron",
         "thanks", "thank",
     } & set(tokens):
         return "thanks"
     if "siapa" in tokens or "who" in tokens:
+        return "identity"
+    if {"bot", "robot", "manusia", "human"} & set(tokens):
         return "identity"
     if {"heiser", "name"} & set(tokens) and {"apa", "what", "itu", "this"} & set(tokens):
         return "identity"
@@ -210,9 +311,21 @@ def detect_social_intent(text: str, language: str = "id") -> str | None:
     return "greeting"
 
 
-def build_social_answer(intent: str, language: str = "id") -> str:
+def build_social_answer(
+    intent: str, language: str = "id", anchor: str | None = None
+) -> str:
     answers = SOCIAL_ANSWERS.get(intent, SOCIAL_ANSWERS["greeting"])
-    return answers.get("en" if language == "en" else "id", answers["id"])
+    answer = answers.get("en" if language == "en" else "id", answers["id"])
+    if intent == "meta" and anchor:
+        topic = re.sub(r"\s+", " ", anchor).strip()[:80]
+        if language == "en":
+            answer += f"\n\nIf you meant \u201c{topic}\u201d, tell me which part you want explained again."
+        else:
+            answer += (
+                f"\n\nKalau yang Anda maksud tadi soal \u201c{topic}\u201d, "
+                "sebutkan bagian yang ingin dijelaskan ulang."
+            )
+    return answer
 
 
 COMPLAINT_RE = re.compile(
@@ -242,6 +355,34 @@ def detect_guidance_intent(text: str) -> str | None:
     return None
 
 
+def is_followup(text: str) -> bool:
+    """True when the message refers back to an earlier turn instead of naming a topic."""
+    return bool(FOLLOWUP_RE.search(text))
+
+
+def last_user_question(history: list[dict[str, str]]) -> str | None:
+    for message in reversed(history):
+        if message.get("role") == "user":
+            content = (message.get("content") or "").strip()
+            if content:
+                return content
+    return None
+
+
+def last_topic_question(history: list[dict[str, str]]) -> str | None:
+    """Most recent user message that names a knowledge topic, skipping small talk."""
+    for message in reversed(history):
+        if message.get("role") != "user":
+            continue
+        content = (message.get("content") or "").strip()
+        if not content:
+            continue
+        if detect_social_intent(content) or detect_guidance_intent(content):
+            continue
+        return content
+    return None
+
+
 def build_guidance_answer(intent: str, language: str = "id") -> str:
     if language == "en":
         if intent == "complaint":
@@ -250,14 +391,14 @@ def build_guidance_answer(intent: str, language: str = "id") -> str:
                 "mobile app or the Reports page on the web. Describe what happened; the "
                 "assistant will classify the category and priority, then create a "
                 "simulated report number starting with WH- that you can track.\n\n"
-                "Note: reports in this prototype are simulations only and are not sent to "
+                "Note: reports here are simulations only and are not sent to "
                 "staff or operator systems. For urgent issues at the station, contact "
                 "official staff."
             )
         return (
-            "The demo knowledge base does not include phone numbers or official contact "
+            "The available travel guide does not include phone numbers or official contact "
             "details. For the customer service number, use the operator's official "
-            "channel or ask station staff. This prototype is not connected to operator "
+            "channel or ask station staff. This service is not connected to operator "
             "systems, so I cannot provide a verified contact number."
         )
     if intent == "complaint":
@@ -266,13 +407,13 @@ def build_guidance_answer(intent: str, language: str = "id") -> str:
             "mobile atau halaman Laporan di web. Tulis kronologi masalahnya; assistant "
             "akan mengklasifikasikan kategori dan prioritas, lalu membuat nomor laporan "
             "simulasi berformat WH- yang bisa dilacak statusnya.\n\n"
-            "Catatan: laporan di prototype ini hanya simulasi dan tidak dikirim ke petugas "
+            "Catatan: laporan di layanan ini hanya simulasi dan tidak dikirim ke petugas "
             "atau sistem operator. Untuk masalah mendesak di stasiun, hubungi petugas resmi."
         )
     return (
-        "Knowledge base demo belum memuat nomor telepon atau detail kontak resmi. Untuk "
+        "Panduan perjalanan yang tersedia belum memuat nomor telepon atau detail kontak resmi. Untuk "
         "nomor layanan pelanggan, gunakan kanal resmi operator atau tanyakan ke petugas "
-        "stasiun. Prototype ini tidak terhubung ke sistem operator, jadi saya tidak bisa "
+        "stasiun. Layanan ini tidak terhubung ke sistem operator, jadi saya tidak bisa "
         "memberi nomor kontak yang terverifikasi."
     )
 
@@ -303,6 +444,10 @@ class SearchHit:
 
 
 def _singular(token: str) -> str:
+    for suffix in ("nya", "kah", "lah", "pun"):
+        if token.endswith(suffix) and len(token) - len(suffix) >= 4:
+            token = token[: -len(suffix)]
+            break
     if len(token) > 3 and token.endswith("s") and not token.endswith(
         ("ss", "us", "is", "as")
     ):
@@ -463,6 +608,7 @@ def index_text(
             (len(chunks), now_iso(), doc_id),
         )
         rebuild_fts(conn, doc_id)
+        vector_store.sync_from_sqlite(conn)
     return {
         "id": doc_id,
         "title": final_title,
@@ -559,6 +705,7 @@ def delete_document(doc_id: str) -> bool:
         )
         conn.execute("DELETE FROM document_chunks WHERE document_id = ?", (doc_id,))
         conn.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+        vector_store.sync_from_sqlite(conn)
     path = Path(row["file_path"])
     if path.exists() and "whoosh-ai-demo://" not in str(path) and KNOWLEDGE_DIR not in path.parents:
         try:
@@ -620,6 +767,20 @@ def _vector_ranks(
         (model for model in stored_models if model != HASHED_MODEL),
         HASHED_MODEL,
     )
+    if vector_store.available():
+        pg_model = vector_store.preferred_model() or preferred
+        vector, used_model = embed_query(query, pg_model)
+        matches = vector_store.similar(vector, used_model, limit=40)
+        if matches:
+            ranked = {
+                chunk_id: round(score, 4) for chunk_id, score in matches if score > 0.05
+            }
+            trace = {
+                "model": used_model,
+                "backend": "pgvector",
+                "stored_models": stored_models,
+            }
+            return ranked, trace
     vector, used_model = embed_query(query, preferred)
     rows = conn.execute(
         "SELECT chunk_id, model, vector FROM chunk_embeddings WHERE model = ?", (used_model,)
@@ -722,7 +883,7 @@ def retrieve_with_trace(
         )
 
     row_by_id = {row["id"]: row for row in rows}
-    vector_weight = 0.45 if embedding_trace.get("backend") == "hashed" else 1.0
+    vector_weight = 0.45 if embedding_trace.get("model") == HASHED_MODEL else 1.0
     fused: dict[str, dict[str, Any]] = {}
     sources_by_id: dict[str, list[str]] = {}
     for source, ranks, weight in (
@@ -997,10 +1158,10 @@ def select_demo_hits(
         if guidance:
             focused = [guidance]
             caveat = (
-                "The demo knowledge base does not include specific figures for this question. "
+                "The available travel guide does not include specific figures for this question. "
                 "Here is the general guidance available:"
                 if language == "en"
-                else "Knowledge base demo belum memuat angka spesifik untuk pertanyaan ini. "
+                else "Panduan perjalanan yang tersedia belum memuat angka spesifik untuk pertanyaan ini. "
                 "Berikut ketentuan umum yang tersedia:"
             )
     return focused, caveat
@@ -1010,18 +1171,18 @@ def build_demo_answer(question: str, hits: list[SearchHit], language: str = "id"
     if not hits:
         if language == "en":
             return (
-                "I could not find that in the demo knowledge base.\n\n"
+                "I could not find that in the available travel guide.\n\n"
                 "I can help with boarding preparation, baggage rules, tickets and schedule "
                 "changes, station facilities, lost items, and complaint reports. Just name a "
                 "topic.\n\nFor important details, verify through the official operator "
-                "channel — this prototype is not connected to operator systems."
+                "channel — this service is not connected to operator systems."
             )
         return (
-            "Saya belum menemukan info itu di knowledge base demo.\n\n"
+            "Saya belum menemukan info itu di panduan perjalanan yang tersedia.\n\n"
             "Saya bisa bantu soal persiapan boarding, ketentuan bagasi, tiket dan perubahan "
             "jadwal, fasilitas stasiun, barang tertinggal, dan laporan keluhan. Sebutkan "
             "topiknya, ya.\n\nUntuk info penting, verifikasi ke kanal resmi operator — "
-            "prototype ini tidak terhubung ke sistem operator."
+            "layanan ini tidak terhubung ke sistem operator."
         )
 
     focused, caveat = select_demo_hits(question, hits, language)
@@ -1035,9 +1196,9 @@ def build_demo_answer(question: str, hits: list[SearchHit], language: str = "id"
     if caveat:
         intro = caveat
     elif language == "en":
-        intro = "Here is the relevant summary from the knowledge base:"
+        intro = "Here is the relevant summary from the travel guide:"
     else:
-        intro = "Ini ringkasan yang relevan dari knowledge base:"
+        intro = "Ini ringkasan dari panduan perjalanan:"
     return f"{intro}\n\n{body}"
 
 
@@ -1058,6 +1219,7 @@ def refresh_embeddings() -> dict[str, Any]:
                      vector=excluded.vector, updated_at=excluded.updated_at""",
                 (row["id"], model, len(vector), pack_vector(vector), now),
             )
+        vector_store.sync_from_sqlite(conn)
     return {"chunks": len(rows), "model": model, "dims": len(vectors[0]) if vectors else 0}
 
 
@@ -1087,5 +1249,6 @@ def retrieval_stats() -> dict[str, Any]:
         "fts_available": fts_rows > 0,
         "embedding_models": models,
         "documents_by_language": languages,
-        "strategy": "hybrid-rrf (FTS5 BM25 + lexical + vector)",
+        "vector_store": vector_store.stats(),
+        "strategy": "hybrid-rrf (FTS5 BM25 + lexical + pgvector/sqlite)",
     }

@@ -1,4 +1,4 @@
-# Panduan Boarding Whoosh (Dokumen Demo)
+# Panduan Boarding Whoosh
 
 > Dokumen contoh untuk prototype Whoosh AI. Bukan dokumen resmi operator. Selalu verifikasi ke kanal resmi operator.
 

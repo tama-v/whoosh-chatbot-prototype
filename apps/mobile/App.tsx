@@ -29,7 +29,6 @@ import {
   readApiBase,
   readLanguage,
   readToken,
-  writeApiBase,
   writeLanguage,
   writeToken,
 } from "./src/storage";
@@ -56,7 +55,6 @@ function AppShell() {
   const insets = useSafeAreaInsets();
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState<Tab>("chat");
-  const [base, setBase] = useState(DEFAULT_API_BASE);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [language, setLanguage] = useState<Language>("id");
   const [authVersion, setAuthVersion] = useState(0);
@@ -83,7 +81,6 @@ function AppShell() {
         ]);
         const normalizedBase = normalizeBase(storedBase ?? DEFAULT_API_BASE);
         configureApi({ base: normalizedBase, token: storedToken, guest });
-        setBase(normalizedBase);
         setLanguage(storedLanguage ?? "id");
         setReady(true);
 
@@ -123,13 +120,6 @@ function AppShell() {
     setUser(null);
     setAuthVersion((value) => value + 1);
     setTab("chat");
-  };
-
-  const handleBaseChange = async (nextBase: string) => {
-    const normalized = normalizeBase(nextBase);
-    configureApi({ base: normalized });
-    await writeApiBase(normalized);
-    setBase(normalized);
   };
 
   const handleLanguage = (nextLanguage: Language) => {
@@ -181,11 +171,9 @@ function AppShell() {
         <View style={[styles.layer, tab !== "account" && styles.hidden]}>
           <AccountScreen
             user={user}
-            apiBase={base}
             language={language}
             onAuth={handleAuth}
             onLogout={handleLogout}
-            onBaseChange={handleBaseChange}
             onLanguageChange={handleLanguage}
           />
         </View>

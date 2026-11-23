@@ -64,13 +64,7 @@ export type VoiceHealth = {
 
 export type HealthResponse = {
   status: string;
-  mode: "qwen" | "demo";
-  model: string | null;
-  embedding_model?: string | null;
-  retrieval?: string;
-  qwen_configured: boolean;
-  voice: VoiceHealth;
-  demo_notice: string;
+  notice?: string;
 };
 
 export type ChatStreamMeta = {

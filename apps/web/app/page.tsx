@@ -1,41 +1,27 @@
 import Link from "next/link";
-import {
-  ArrowRight,
-  BookOpen,
-  ClipboardList,
-  FileText,
-  LayoutDashboard,
-  Mic,
-} from "lucide-react";
+import { ArrowRight, ClipboardList, FileText, Mic } from "lucide-react";
 import { HeiserMascot } from "@/components/heiser/heiser-mascot";
-import { KnowledgeStats } from "@/components/knowledge-stats";
 import { MarketingHeader } from "@/components/marketing-header";
 import { WhooshMark, Wordmark } from "@/components/whoosh-mark";
 
 const FLOWS = [
   {
-    icon: BookOpen,
+    icon: FileText,
     title: "Jawaban dengan sumber",
-    body: "Setiap balasan menyertakan dokumen dan bagian yang dipakai. Jika bukti tidak cukup, Heiser mengatakannya.",
+    body: "Setiap balasan menyebut dokumen dan bagian yang dipakai. Bila bukti tidak cukup, Heiser mengatakannya.",
     visual: "sources" as const,
   },
   {
     icon: Mic,
-    title: "Pertanyaan lewat suara",
-    body: "Rekam pertanyaan lewat mikrofon, periksa transkrip, lalu dengarkan jawaban. Demo memakai Web Speech API di browser.",
+    title: "Tanya lewat suara",
+    body: "Rekam pertanyaan, periksa transkrip, lalu dengarkan jawabannya langsung dari perangkatmu.",
     visual: "voice" as const,
   },
   {
     icon: ClipboardList,
     title: "Laporan terstruktur",
-    body: "Ceritakan keluhan; Heiser mengusulkan kategori, prioritas, dan detail yang masih kurang. Nomor laporan bersifat simulasi.",
+    body: "Ceritakan keluhan; Heiser mengusulkan kategori, prioritas, dan detail yang masih kurang.",
     visual: "complaint" as const,
-  },
-  {
-    icon: LayoutDashboard,
-    title: "Dashboard admin",
-    body: "Pantau percakapan, ubah status laporan, dan kelola dokumen knowledge. Upload PDF, TXT, atau Markdown hingga 5 MB.",
-    visual: "docs" as const,
   },
 ];
 
@@ -48,19 +34,13 @@ const STEPS = [
   {
     number: "02",
     title: "Heiser menelusuri dokumen",
-    body: "Pertanyaan dicocokkan dengan knowledge base demo. Jawaban tidak keluar dari isi dokumen.",
+    body: "Pertanyaan dicocokkan dengan panduan perjalanan yang tersedia. Jawaban tidak keluar dari isi dokumen.",
   },
   {
     number: "03",
     title: "Baca jawaban dan sumbernya",
     body: "Dokumen sumber tampil di bawah jawaban, dan jawaban bisa dibacakan atau dilanjutkan menjadi laporan.",
   },
-];
-
-const DOCS = [
-  { name: "Panduan Boarding", chunks: 4 },
-  { name: "Ketentuan Bagasi", chunks: 3 },
-  { name: "Barang Tertinggal", chunks: 3 },
 ];
 
 function FlowVisual({ kind }: { kind: (typeof FLOWS)[number]["visual"] }) {
@@ -92,38 +72,24 @@ function FlowVisual({ kind }: { kind: (typeof FLOWS)[number]["visual"] }) {
             />
           ))}
         </div>
-        <span className="shrink-0 text-[13px] font-medium text-muted">Push-to-talk</span>
-      </div>
-    );
-  }
-
-  if (kind === "complaint") {
-    return (
-      <div className="rounded-lg border border-line/80 bg-cream/50 px-4 py-3">
-        <div className="flex items-center justify-between gap-3">
-          <span className="font-mono text-[13px] font-semibold text-ink">WH-DEMO-1001</span>
-          <span className="rounded-full border border-amber-200 bg-warn px-2 py-0.5 text-[13px] font-medium text-amber-900">
-            Ditinjau
-          </span>
-        </div>
-        <div className="mt-3 flex items-center gap-1">
-          {[1, 1, 0, 0].map((active, index) => (
-            <span key={index} className={`h-1 flex-1 rounded-full ${active ? "bg-maroon" : "bg-line-strong/60"}`} />
-          ))}
-        </div>
+        <span className="shrink-0 text-[13px] font-medium text-muted">Tahan untuk bicara</span>
       </div>
     );
   }
 
   return (
-    <div className="divide-y divide-line/70 rounded-lg border border-line/80 bg-cream/50 px-4">
-      {DOCS.map((doc) => (
-        <div key={doc.name} className="flex items-center gap-2.5 py-2.5">
-          <FileText className="h-3.5 w-3.5 shrink-0 text-maroon/70" />
-          <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink/80">{doc.name}</span>
-          <span className="shrink-0 text-[13px] text-muted">{doc.chunks} chunk</span>
-        </div>
-      ))}
+    <div className="rounded-lg border border-line/80 bg-cream/50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-mono text-[13px] font-semibold text-ink">WH-2026-1001</span>
+        <span className="rounded-full border border-amber-200 bg-warn px-2 py-0.5 text-[13px] font-medium text-amber-900">
+          Ditinjau
+        </span>
+      </div>
+      <div className="mt-3 flex items-center gap-1">
+        {[1, 1, 0, 0].map((active, index) => (
+          <span key={index} className={`h-1 flex-1 rounded-full ${active ? "bg-maroon" : "bg-line-strong/60"}`} />
+        ))}
+      </div>
     </div>
   );
 }
@@ -136,9 +102,7 @@ export default function LandingPage() {
       <main>
         <section className="mx-auto grid max-w-7xl items-center gap-14 px-5 pb-20 pt-12 sm:px-8 lg:min-h-[calc(100svh-72px)] lg:grid-cols-2 lg:gap-16 lg:py-16">
           <div className="animate-fade-up">
-            <p className="text-[13px] font-medium text-muted">
-              Demo mandiri · <KnowledgeStats variant="docs-example" /> · bukan sistem operator
-            </p>
+            <p className="text-[13px] font-medium text-muted">Asisten perjalanan Whoosh</p>
             <h1 className="mt-5 max-w-[600px] text-[42px] font-bold leading-[1.05] tracking-[-0.035em] text-ink sm:text-[56px] lg:text-[44px] xl:text-[58px]">
               Asisten perjalanan Whoosh, dengan{" "}
               <span className="text-maroon">sumber</span> di setiap jawaban.
@@ -152,12 +116,13 @@ export default function LandingPage() {
                 Mulai chat
                 <ArrowRight className="h-4 w-4" />
               </Link>
-              <Link href="/admin" className="ui-btn-ghost h-12 px-5 text-[15px]">
-                Lihat dashboard demo
+              <Link href="/complaints" className="ui-btn-ghost h-12 px-5 text-[15px]">
+                Buat laporan
               </Link>
             </div>
-            <p className="mt-7 text-[13px] leading-relaxed text-muted">
-              <KnowledgeStats variant="pair" /> · voice lewat mikrofon browser · riwayat di SQLite lokal
+            <p className="mt-7 max-w-[420px] text-[13px] leading-relaxed text-muted">
+              Prototipe mandiri. Bukan layanan resmi operator dan tidak terhubung ke sistem
+              internal.
             </p>
           </div>
 
@@ -170,14 +135,12 @@ export default function LandingPage() {
                   </span>
                   <div>
                     <p className="text-[14px] font-semibold text-ink">Heiser</p>
-                    <p className="text-[13px] text-muted">
-                      Knowledge base demo · <KnowledgeStats variant="docs" />
-                    </p>
+                    <p className="text-[13px] text-muted">Siap membantu</p>
                   </div>
                 </div>
                 <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-muted">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                  Siap
+                  Online
                 </span>
               </div>
 
@@ -227,7 +190,7 @@ export default function LandingPage() {
           <div className="mx-auto max-w-7xl px-5 py-20 sm:px-8 lg:py-24">
             <div className="grid gap-6 lg:grid-cols-[1fr_360px] lg:items-end">
               <h2 className="max-w-[620px] text-[34px] font-bold leading-[1.06] tracking-[-0.03em] text-ink sm:text-[42px]">
-                Empat alur, satu knowledge base.
+                Tiga hal yang bisa Heiser bantu.
               </h2>
               <p className="text-[15px] leading-[1.72] text-muted">
                 Setiap jawaban punya sumber, setiap laporan punya status, dan setiap keterbatasan
@@ -235,7 +198,7 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="mt-12 grid gap-px overflow-hidden rounded-[20px] border border-line/80 bg-line/70 sm:grid-cols-2">
+            <div className="mt-12 grid gap-px overflow-hidden rounded-[20px] border border-line/80 bg-line/70 sm:grid-cols-3">
               {FLOWS.map((flow, index) => {
                 const Icon = flow.icon;
                 return (
@@ -270,11 +233,11 @@ export default function LandingPage() {
                 Transparan dari pertanyaan sampai sumber.
               </h2>
               <p className="mt-5 max-w-sm text-[15px] leading-[1.72] text-muted">
-                Chat dan laporan membaca indeks yang sama: <KnowledgeStats variant="index" />. Tidak
-                ada jalur pintas yang melewati dokumen.
+                Chat dan laporan membaca panduan yang sama. Tidak ada jalur pintas yang melewati
+                dokumen.
               </p>
               <p className="mt-8 text-[13px] leading-relaxed text-muted">
-                Prototype mandiri · tidak terhubung ke sistem operator.
+                Prototipe mandiri · tidak terhubung ke sistem operator.
               </p>
             </div>
 
@@ -299,8 +262,7 @@ export default function LandingPage() {
                 Mulai dari satu pertanyaan.
               </h2>
               <p className="mt-4 max-w-[520px] text-[15px] leading-[1.72] text-rose-100/75">
-                Chat, dengarkan jawaban, buat laporan simulasi, lalu periksa semuanya di dashboard
-                admin.
+                Chat, dengarkan jawaban, lalu buat laporan bila ada kendala perjalanan.
               </p>
             </div>
             <div className="flex flex-wrap gap-3">
@@ -324,14 +286,11 @@ export default function LandingPage() {
           <div className="flex items-center gap-4">
             <Wordmark />
             <span className="hidden h-4 w-px bg-line-strong/70 sm:block" />
-            <p className="text-[13px] text-muted">Prototype asisten perjalanan · 2026</p>
+            <p className="text-[13px] text-muted">Prototipe asisten perjalanan · 2026</p>
           </div>
-          <div className="flex flex-col gap-2 text-[13px] text-muted sm:flex-row sm:items-center sm:gap-5">
-            <span>Bukan layanan resmi operator. Tidak terhubung ke sistem internal.</span>
-            <Link href="/admin#knowledge" className="font-medium text-maroon hover:underline">
-              Kelola knowledge demo
-            </Link>
-          </div>
+          <p className="text-[13px] text-muted">
+            Bukan layanan resmi operator. Verifikasi informasi penting di kanal resmi.
+          </p>
         </div>
       </footer>
     </div>

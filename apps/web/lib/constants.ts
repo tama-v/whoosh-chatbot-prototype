@@ -50,26 +50,26 @@ export const STATUS_META: Record<
   { label: string; description: string; badge: string; dot: string }
 > = {
   submitted_to_demo_system: {
-    label: "Terkirim (demo)",
-    description: "Tersimpan di sistem simulasi",
+    label: "Terkirim",
+    description: "Laporan sudah tercatat",
     badge: "bg-blush text-maroon border-line",
     dot: "bg-maroon",
   },
   under_review: {
     label: "Ditinjau",
-    description: "Sedang ditinjau pada alur demo",
+    description: "Sedang ditinjau",
     badge: "bg-warn text-amber-900 border-amber-200",
     dot: "bg-amber-500",
   },
   resolved: {
     label: "Selesai",
-    description: "Ditandai selesai pada alur demo",
+    description: "Dinyatakan selesai",
     badge: "bg-mint text-[#3d6b4f] border-[#d6e6da]",
     dot: "bg-[#4f7a5c]",
   },
   closed: {
     label: "Ditutup",
-    description: "Laporan demo ditutup",
+    description: "Laporan ditutup",
     badge: "bg-cream text-muted border-line",
     dot: "bg-[#b9a8a0]",
   },

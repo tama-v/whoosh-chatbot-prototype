@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Sparkles, UserRound } from "lucide-react";
+import { ArrowUpRight, UserRound } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { Wordmark } from "./whoosh-mark";
 
@@ -22,15 +22,13 @@ export function MarketingHeader() {
           <Link href="/complaints" className="whitespace-nowrap transition-colors hover:text-ink">
             Laporan
           </Link>
-          <Link href="/admin" className="whitespace-nowrap transition-colors hover:text-ink">
-            Admin
-          </Link>
+          {user?.role === "admin" && (
+            <Link href="/admin" className="whitespace-nowrap transition-colors hover:text-ink">
+              Admin
+            </Link>
+          )}
         </nav>
         <div className="flex items-center gap-2.5">
-          <span className="demo-badge hidden whitespace-nowrap xl:inline-flex">
-            <Sparkles className="h-3 w-3" />
-            Prototype demo
-          </span>
           {user ? (
             <Link
               href={user.role === "admin" ? "/admin" : "/chat"}

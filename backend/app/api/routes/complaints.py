@@ -75,7 +75,7 @@ def analyze_complaint(payload: ComplaintAnalyzeRequest) -> dict:
         "missing_fields": missing,
         "summary": summary,
         "demo": True,
-        "notice": "Analisis ini adalah simulasi aturan sederhana, bukan model produksi.",
+        "notice": "Kategori dan prioritas diusulkan otomatis. Periksa kembali sebelum mengirim.",
     }
 
 

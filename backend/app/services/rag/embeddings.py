@@ -91,6 +91,21 @@ def cosine(left: list[float], right: list[float]) -> float:
 _qwen_broken = False
 
 
+def _trust_env() -> bool:
+    # Local OpenAI-compatible servers (Ollama, LM Studio) must not go through ambient proxies.
+    host = httpx.URL(QWEN_BASE_URL).host if QWEN_BASE_URL else ""
+    if host in {"127.0.0.1", "localhost", "::1"}:
+        return False
+    try:
+        httpx.Client(trust_env=True).close()
+    except httpx.InvalidURL:
+        return False
+    return True
+
+
+_TRUST_ENV = _trust_env()
+
+
 def _qwen_embed(texts: list[str]) -> list[list[float]]:
     global _qwen_broken
     if _qwen_broken:
@@ -100,7 +115,9 @@ def _qwen_embed(texts: list[str]) -> list[list[float]]:
         "Content-Type": "application/json",
     }
     vectors: list[list[float]] = []
-    with httpx.Client(timeout=httpx.Timeout(30.0, connect=10.0)) as client:
+    with httpx.Client(
+        timeout=httpx.Timeout(30.0, connect=10.0), trust_env=_TRUST_ENV
+    ) as client:
         for start in range(0, len(texts), 10):
             batch = texts[start:start + 10]
             response = client.post(

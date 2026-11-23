@@ -1,4 +1,4 @@
-# Tiket, Perubahan, dan Pembatalan (Dokumen Demo)
+# Tiket, Perubahan, dan Pembatalan
 
 > Dokumen contoh untuk prototype Whoosh AI. Bukan dokumen resmi operator dan bukan sistem ticketing. Semua transaksi harus dilakukan melalui kanal resmi.
 

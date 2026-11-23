@@ -17,7 +17,7 @@ export const metadata: Metadata = {
     template: "%s · Whoosh AI",
   },
   description:
-    "Asisten perjalanan Whoosh AI: chat dengan dokumen sumber, pertanyaan suara, laporan keluhan, dan dashboard admin. Knowledge base demo, bukan sistem operator.",
+    "Asisten perjalanan Whoosh AI: tanya jawab dengan sumber, pertanyaan suara, dan laporan keluhan. Prototipe mandiri, bukan layanan resmi operator.",
 };
 
 export const viewport: Viewport = {
@@ -28,7 +28,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="id" className={inter.variable}>
+    <html lang="id" className={inter.variable} data-scroll-behavior="smooth">
       <body>
         <AuthProvider>{children}</AuthProvider>
       </body>

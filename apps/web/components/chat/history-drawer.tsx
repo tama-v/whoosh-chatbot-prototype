@@ -77,7 +77,7 @@ export function HistoryDrawer({
               </span>
               <p className="mt-3 text-[14px] font-semibold text-ink">Belum ada riwayat</p>
               <p className="mt-1 text-[13px] leading-relaxed text-muted">
-                Percakapan yang kamu kirim akan tercatat di backend demo.
+                Percakapanmu akan tersimpan agar bisa dibuka kembali kapan saja.
               </p>
             </div>
           ) : (
@@ -122,7 +122,7 @@ export function HistoryDrawer({
 
         <div className="border-t border-line/80 px-5 py-3">
           <p className="text-[13px] leading-relaxed text-muted/70">
-            Riwayat tersimpan di database lokal backend. Tidak terhubung ke sistem operator.
+            Riwayat tersimpan di akunmu dan bisa dibuka kembali kapan saja.
           </p>
         </div>
       </div>

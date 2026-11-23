@@ -261,10 +261,9 @@ export function ComplaintsScreen({
                   <Ionicons name="shield-checkmark-outline" size={18} color={colors.maroon} />
                 </View>
                 <View style={styles.infoCopy}>
-                  <Text style={styles.infoTitle}>Simulasi laporan internal</Text>
+                  <Text style={styles.infoTitle}>Laporan bukan tiket resmi</Text>
                   <Text style={styles.infoText}>
-                    Laporan tidak terhubung ke operator dan bukan tiket resmi. Gunakan untuk demonstrasi alur
-                    keluhan.
+                    Laporan tidak terhubung ke operator. Gunakan untuk mencoba alur keluhan.
                   </Text>
                 </View>
               </View>
@@ -620,8 +619,7 @@ export function ComplaintsScreen({
               <View style={styles.detailNotice}>
                 <Ionicons name="shield-checkmark-outline" size={17} color={colors.maroon} />
                 <Text style={styles.detailNoticeText}>
-                  Laporan ini disimpan di database lokal prototipe. Status tindak lanjut hanya untuk demonstrasi
-                  dan tidak dikirim ke operator.
+                  Status tindak lanjut belum terhubung ke operator resmi.
                 </Text>
               </View>
 

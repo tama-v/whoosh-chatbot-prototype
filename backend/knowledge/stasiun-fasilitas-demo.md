@@ -1,4 +1,4 @@
-# Stasiun dan Fasilitas (Dokumen Demo)
+# Stasiun dan Fasilitas
 
 > Dokumen contoh untuk prototype Whoosh AI. Bukan dokumen resmi operator. Fasilitas aktual dapat berbeda di setiap stasiun.
 

@@ -1,5 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
-import { Audio } from "expo-av";
+import type { Audio } from "expo-av";
 import * as Speech from "expo-speech";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -50,9 +50,9 @@ type WebRecognitionEvent = {
 type WebRecognitionCtor = new () => WebRecognition;
 
 const MODE_META: Record<string, { label: string; color: string; bg: string }> = {
-  qwen: { label: "Qwen", color: colors.amber, bg: colors.goldSoft },
-  demo: { label: "Demo RAG", color: colors.green, bg: colors.greenSoft },
-  "demo-fallback": { label: "Fallback demo", color: colors.amber, bg: colors.amberSoft },
+  qwen: { label: "Dengan sumber", color: colors.amber, bg: colors.goldSoft },
+  demo: { label: "Dengan sumber", color: colors.green, bg: colors.greenSoft },
+  "demo-fallback": { label: "Ringkasan umum", color: colors.amber, bg: colors.amberSoft },
   "no-evidence": { label: "Belum ada bukti", color: colors.red, bg: colors.redSoft },
 };
 
@@ -106,6 +106,7 @@ export function ChatScreen({
 
   const scrollRef = useRef<ScrollViewInstance | null>(null);
   const recordingRef = useRef<Audio.Recording | null>(null);
+  const nativeAudioRef = useRef<typeof import("expo-av").Audio | null>(null);
   const webRecognitionRef = useRef<WebRecognition | null>(null);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const insets = useSafeAreaInsets();
@@ -340,18 +341,26 @@ export function ChatScreen({
   }, [flashNotice, language, sendMessage]);
 
   const startNativeRecording = useCallback(async () => {
+    let audio: typeof import("expo-av").Audio;
     try {
-      const permission = await Audio.requestPermissionsAsync();
+      ({ Audio: audio } = await import("expo-av"));
+    } catch {
+      flashNotice("Rekam suara native memerlukan development build Expo, tidak tersedia di Expo Go.");
+      return;
+    }
+    nativeAudioRef.current = audio;
+    try {
+      const permission = await audio.requestPermissionsAsync();
       if (!permission.granted) {
         flashNotice("Izin mikrofon ditolak. Aktifkan izin mikrofon di pengaturan perangkat.");
         return;
       }
-      await Audio.setAudioModeAsync({
+      await audio.setAudioModeAsync({
         allowsRecordingIOS: true,
         playsInSilentModeIOS: true,
         shouldDuckAndroid: true,
       });
-      const { recording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+      const { recording } = await audio.Recording.createAsync(audio.RecordingOptionsPresets.HIGH_QUALITY);
       recordingRef.current = recording;
       setRecordStatus("recording");
     } catch {
@@ -367,7 +376,7 @@ export function ChatScreen({
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       recordingRef.current = null;
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+      await nativeAudioRef.current?.setAudioModeAsync({ allowsRecordingIOS: false });
       if (!uri) throw new Error("Rekaman tidak tersedia.");
       const result = await api.transcribe(uri, "audio/mp4", language);
       const text = result.text?.trim();
@@ -419,7 +428,7 @@ export function ChatScreen({
     <View style={styles.screen}>
       <ScreenHeader
         title="Heiser"
-        subtitle={language === "id" ? "Asisten perjalanan · KB lokal" : "Travel assistant · local KB"}
+        subtitle={language === "id" ? "Asisten perjalanan" : "Travel assistant"}
         right={
           <>
             <Pressable
@@ -471,7 +480,7 @@ export function ChatScreen({
               <View style={styles.welcomeBadge}>
                 <View style={styles.liveDot} />
                 <Text style={styles.welcomeBadgeText}>
-                  {language === "id" ? "KNOWLEDGE BASE LOKAL AKTIF" : "LOCAL KNOWLEDGE BASE ACTIVE"}
+                  {language === "id" ? "SIAP MEMBANTU" : "READY TO HELP"}
                 </Text>
               </View>
               <Heiser width={158} />
@@ -480,8 +489,8 @@ export function ChatScreen({
               </Text>
               <Text style={styles.welcomeCopy}>
                 {language === "id"
-                  ? "Tanyakan persiapan boarding, bagasi, tiket, fasilitas stasiun, atau barang tertinggal. Saya menjawab dari knowledge base lokal, bukan dari sistem operator."
-                  : "Ask about boarding, baggage, tickets, station facilities, or lost items. I answer from a local knowledge base, not from operator systems."}
+                  ? "Tanyakan persiapan boarding, bagasi, tiket, fasilitas stasiun, atau barang tertinggal. Saya menjawab dari panduan perjalanan yang tersedia, bukan dari sistem operator."
+                  : "Ask about boarding, baggage, tickets, station facilities, or lost items. I answer from the available travel guides, not from operator systems."}
               </Text>
               {!userName ? (
                 <Pressable onPress={confirmLogoutHint} style={styles.guestHint}>
@@ -511,8 +520,8 @@ export function ChatScreen({
               </View>
               <Text style={styles.disclaimer}>
                 {language === "id"
-                  ? "Prototipe mandiri · bukan layanan resmi operator · verifikasi informasi penting."
-                  : "Independent prototype · not an official operator service · verify important information."}
+                  ? "Bukan layanan resmi operator · verifikasi informasi penting."
+                  : "Not an official operator service · verify important information."}
               </Text>
             </View>
           ) : (
@@ -656,8 +665,8 @@ export function ChatScreen({
             <View style={styles.metaDot} />
             <Text style={styles.composerMetaText}>
               {language === "id"
-                ? "Data per akun/tamu · rate limit aktif"
-                : "Per account/guest data · rate limiting on"}
+                ? "Jawaban bisa keliru · verifikasi di kanal resmi"
+                : "Answers may be wrong · verify with official channels"}
             </Text>
             <Text style={styles.composerMetaText}>·</Text>
             <Text style={styles.composerMetaText}>Heiser v1</Text>

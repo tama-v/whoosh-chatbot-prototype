@@ -6,15 +6,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.routes import admin, auth, chat, complaints, documents, voice
-from app.core.config import (
-    AI_CONFIGURED,
-    APP_NAME,
-    QWEN_CHAT_MODEL,
-    QWEN_EMBEDDING_MODEL,
-)
+from app.core.config import APP_NAME
 from app.core.rate_limit import RateLimitMiddleware
 from app.database.db import init_db
-from app.services.voice.service import health_payload as voice_health_payload
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 
@@ -76,18 +70,5 @@ def root() -> dict:
 
 @app.get("/api/v1/health")
 def health() -> dict:
-    return {
-        "status": "ok",
-        "mode": "qwen" if AI_CONFIGURED else "demo",
-        "model": QWEN_CHAT_MODEL if AI_CONFIGURED else None,
-        "embedding_model": QWEN_EMBEDDING_MODEL if AI_CONFIGURED else None,
-        "retrieval": "hybrid-rrf (FTS5 + lexical + vector)",
-        "qwen_configured": AI_CONFIGURED,
-        "voice": voice_health_payload(),
-        "demo_notice": (
-            "Mode demo aktif: jawaban berasal dari knowledge base demo dan bukan layanan resmi operator. "
-            "Konfigurasi Qwen di backend untuk mengaktifkan mode model."
-            if not AI_CONFIGURED
-            else "Mode Qwen aktif. Tetap verifikasi konfigurasi model dan endpoint pada dokumentasi resmi."
-        ),
-    }
+    # Passenger-facing probe: no model names, hosts, or infrastructure details.
+    return {"status": "ok", "notice": "Layanan asisten perjalanan aktif."}

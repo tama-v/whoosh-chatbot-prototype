@@ -1,9 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 import {
   Alert,
   KeyboardAvoidingView,
-  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -11,36 +10,26 @@ import {
   Text,
   View,
 } from "react-native";
-import { api, DEFAULT_API_BASE, errorMessage, normalizeBase } from "../api";
+import { api, errorMessage } from "../api";
 import { colors, fonts, radius } from "../theme";
-import type { AuthResponse, AuthUser, HealthResponse, Language } from "../types";
+import type { AuthResponse, AuthUser, Language } from "../types";
 import { formatDate, formatDateTime, initials } from "../utils";
 import { WhooshMark } from "../components/WhooshMark";
 import { Badge, Button, Card, Field, ScreenHeader } from "../components/ui";
 
 type AuthMode = "login" | "register";
 
-function webUrlFor(apiBase: string): string {
-  const override = process.env.EXPO_PUBLIC_WEB_URL?.trim();
-  if (override) return override.replace(/\/+$/, "");
-  return apiBase.replace(/:8000(?=\/|$)/, ":3000");
-}
-
 export function AccountScreen({
   user,
-  apiBase,
   language,
   onAuth,
   onLogout,
-  onBaseChange,
   onLanguageChange,
 }: {
   user: AuthUser | null;
-  apiBase: string;
   language: Language;
   onAuth: (response: AuthResponse) => void;
   onLogout: () => void;
-  onBaseChange: (base: string) => Promise<void>;
   onLanguageChange: (language: Language) => void;
 }) {
   const [mode, setMode] = useState<AuthMode>("login");
@@ -51,34 +40,6 @@ export function AccountScreen({
   const [submitting, setSubmitting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [authNotice, setAuthNotice] = useState<string | null>(null);
-
-  const [baseInput, setBaseInput] = useState(apiBase);
-  const [savingBase, setSavingBase] = useState(false);
-  const [testing, setTesting] = useState(false);
-  const [health, setHealth] = useState<HealthResponse | null>(null);
-  const [healthError, setHealthError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setBaseInput(apiBase);
-  }, [apiBase]);
-
-  const testConnection = useCallback(async () => {
-    setTesting(true);
-    setHealthError(null);
-    try {
-      const result = await api.health();
-      setHealth(result);
-    } catch (requestError) {
-      setHealth(null);
-      setHealthError(errorMessage(requestError));
-    } finally {
-      setTesting(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    void testConnection();
-  }, [apiBase, testConnection]);
 
   const submitAuth = useCallback(async () => {
     if (submitting) return;
@@ -121,33 +82,6 @@ export function AccountScreen({
     }
   }, [email, mode, name, onAuth, password, submitting]);
 
-  const saveBase = useCallback(async () => {
-    if (savingBase) return;
-    const normalized = normalizeBase(baseInput);
-    if (!/^https?:\/\/[^\s]+$/i.test(normalized)) {
-      setHealthError("Alamat server tidak valid. Contoh: http://192.168.1.10:8000");
-      return;
-    }
-    setSavingBase(true);
-    setHealthError(null);
-    try {
-      await onBaseChange(normalized);
-      setBaseInput(normalized);
-      setTesting(true);
-      try {
-        const result = await api.health();
-        setHealth(result);
-      } catch (requestError) {
-        setHealth(null);
-        setHealthError(errorMessage(requestError));
-      } finally {
-        setTesting(false);
-      }
-    } finally {
-      setSavingBase(false);
-    }
-  }, [baseInput, onBaseChange, savingBase]);
-
   const confirmLogout = useCallback(() => {
     Alert.alert("Keluar dari akun?", "Riwayat tetap tersimpan di akun dan dapat dibuka saat masuk kembali.", [
       { text: "Batal", style: "cancel" },
@@ -162,21 +96,6 @@ export function AccountScreen({
       },
     ]);
   }, [onLogout]);
-
-  const openWeb = useCallback(() => {
-    const url = webUrlFor(apiBase);
-    void Linking.openURL(url).catch(() => {
-      Alert.alert("Tidak dapat membuka browser", `Buka alamat berikut secara manual: ${url}`);
-    });
-  }, [apiBase]);
-
-  const serverLabel = health
-    ? health.mode === "qwen"
-      ? "Qwen aktif"
-      : "Mode demo lokal"
-    : healthError
-      ? "Tidak terhubung"
-      : "Memeriksa…";
 
   return (
     <View style={styles.screen}>
@@ -224,7 +143,7 @@ export function AccountScreen({
                     </Text>
                     <View style={styles.sessionRow}>
                       <View style={styles.sessionDot} />
-                      <Text style={styles.sessionText}>Sesi aktif · token di perangkat</Text>
+                      <Text style={styles.sessionText}>Sesi aktif</Text>
                     </View>
                   </View>
                 </View>
@@ -239,20 +158,7 @@ export function AccountScreen({
                     <Text style={styles.profileMetaValue}>{formatDateTime(user.last_login_at)}</Text>
                   </View>
                 </View>
-                {user.role === "admin" ? (
-                  <View style={styles.adminBox}>
-                    <Ionicons name="shield-checkmark-outline" size={18} color={colors.amber} />
-                    <View style={styles.flex}>
-                      <Text style={styles.adminTitle}>Dashboard admin ada di versi web</Text>
-                      <Text style={styles.adminText}>
-                        Mobile tetap bisa chat, membuat laporan, dan memutar jawaban dengan suara.
-                      </Text>
-                    </View>
-                    <Button label="Buka web" icon="open-outline" variant="secondary" compact onPress={openWeb} />
-                  </View>
-                ) : null}
                 <View style={styles.profileActions}>
-                  <Button label="Buka versi web" icon="globe-outline" variant="ghost" onPress={openWeb} full />
                   <Button label="Keluar" icon="log-out-outline" variant="danger" onPress={confirmLogout} full />
                 </View>
               </Card>
@@ -430,8 +336,7 @@ export function AccountScreen({
                 <View style={styles.guestBox}>
                   <Ionicons name="information-circle-outline" size={17} color={colors.maroon} />
                   <Text style={styles.guestBoxText}>
-                    Tidak ingin mendaftar? Anda tetap bisa chat dan membuat laporan sebagai tamu. Data tamu
-                    disimpan di perangkat dan server untuk sesi ini.
+                    Tidak ingin mendaftar? Anda tetap bisa chat dan membuat laporan sebagai tamu.
                   </Text>
                 </View>
               </Card>
@@ -469,129 +374,31 @@ export function AccountScreen({
             </>
           )}
 
-          <Text style={styles.sectionTitle}>Server & koneksi</Text>
-          <Card style={styles.serverCard}>
-            <View style={styles.serverHead}>
-              <View style={styles.preferenceIcon}>
-                <Ionicons name="server-outline" size={18} color={colors.maroon} />
-              </View>
-              <View style={styles.flex}>
-                <Text style={styles.preferenceTitle}>Alamat API backend</Text>
-                <Text style={styles.preferenceText}>
-                  Emulator Android memakai 10.0.2.2. Perangkat fisik perlu IP LAN komputer.
-                </Text>
-              </View>
-              <View style={styles.serverStatus}>
-                <View
-                  style={[
-                    styles.serverDot,
-                    { backgroundColor: health ? colors.green : healthError ? colors.red : colors.gold },
-                  ]}
-                />
-                <Text style={styles.serverStatusText}>{serverLabel}</Text>
-              </View>
-            </View>
-            <Field
-              value={baseInput}
-              onChangeText={setBaseInput}
-              placeholder="http://192.168.1.10:8000"
-              autoCapitalize="none"
-              autoCorrect={false}
-              keyboardType="url"
-              icon="link-outline"
-              containerStyle={styles.serverField}
-            />
-            <View style={styles.serverActions}>
-              <Button
-                label={savingBase ? "Menyimpan…" : "Simpan alamat"}
-                icon="save-outline"
-                onPress={() => void saveBase()}
-                loading={savingBase}
-                variant="primary"
-                compact
-              />
-              <Button
-                label={testing ? "Menguji…" : "Uji ulang"}
-                icon="pulse-outline"
-                onPress={() => void testConnection()}
-                loading={testing}
-                variant="ghost"
-                compact
-              />
-              <Pressable onPress={() => setBaseInput(DEFAULT_API_BASE)} hitSlop={8}>
-                <Text style={styles.resetText}>Reset</Text>
-              </Pressable>
-            </View>
-            {health ? (
-              <View style={styles.healthCard}>
-                <View style={styles.healthRow}>
-                  <Text style={styles.healthLabel}>Mode AI</Text>
-                  <Badge
-                    label={health.mode === "qwen" ? "Qwen" : "Demo lokal"}
-                    color={health.mode === "qwen" ? colors.amber : colors.green}
-                    background={health.mode === "qwen" ? colors.goldSoft : colors.greenSoft}
-                  />
-                </View>
-                <View style={styles.healthRow}>
-                  <Text style={styles.healthLabel}>Model chat</Text>
-                  <Text style={styles.healthValue}>{health.model ?? "Demo RAG"}</Text>
-                </View>
-                <View style={styles.healthRow}>
-                  <Text style={styles.healthLabel}>Transkripsi (ASR)</Text>
-                  <Text style={styles.healthValue}>
-                    {health.voice.asr_configured ? health.voice.asr_model ?? "Aktif" : "Belum aktif"}
-                  </Text>
-                </View>
-                <View style={styles.healthRow}>
-                  <Text style={styles.healthLabel}>Suara server (TTS)</Text>
-                  <Text style={styles.healthValue}>
-                    {health.voice.tts_configured
-                      ? health.voice.tts_model ?? "Aktif"
-                      : health.voice.demo_tts
-                        ? "Demo SAPI di web"
-                        : "Tidak aktif"}
-                  </Text>
-                </View>
-              </View>
-            ) : null}
-            {healthError ? (
-              <View style={styles.healthError}>
-                <Ionicons name="cloud-offline-outline" size={15} color={colors.red} />
-                <Text style={styles.healthErrorText}>{healthError}</Text>
-              </View>
-            ) : null}
-            <Text style={styles.serverHint}>
-              Alamat berlaku untuk permintaan berikutnya. Jika memakai Expo Go di HP, gunakan IP LAN komputer,
-              bukan localhost.
-            </Text>
-          </Card>
-
           <Text style={styles.sectionTitle}>Tentang aplikasi</Text>
           <Card style={styles.aboutCard}>
             <View style={styles.aboutHead}>
               <WhooshMark size={40} />
               <View style={styles.flex}>
                 <Text style={styles.aboutTitle}>Whoosh AI · Heiser</Text>
-                <Text style={styles.aboutSubtitle}>Prototipe asisten perjalanan mandiri</Text>
+                <Text style={styles.aboutSubtitle}>Asisten perjalanan</Text>
               </View>
               <Badge label="v1.0" color={colors.maroon} background={colors.maroonSoft} />
             </View>
             <View style={styles.aboutDivider} />
-            <InfoRow icon="layers-outline" label="Data" value="SQLite lokal di backend" />
-            <InfoRow icon="shield-checkmark-outline" label="Keamanan" value="Sesi token & rate limit" />
-            <InfoRow icon="volume-high-outline" label="Suara" value="TTS perangkat; ASR server opsional" />
-            <InfoRow icon="document-text-outline" label="Laporan" value="Simulasi internal, bukan tiket resmi" />
+            <InfoRow icon="chatbubble-ellipses-outline" label="Chat" value="Jawaban dengan sumber" />
+            <InfoRow icon="volume-high-outline" label="Suara" value="Tanya dan dengarkan jawaban" />
+            <InfoRow icon="document-text-outline" label="Laporan" value="Bisa dilacak dengan nomor tiket" />
+            <InfoRow icon="person-circle-outline" label="Akun" value="Riwayat tersimpan di akunmu" />
             <View style={styles.aboutNotice}>
               <Ionicons name="information-circle-outline" size={16} color={colors.maroon} />
               <Text style={styles.aboutNoticeText}>
-                Aplikasi ini tidak terhubung ke sistem operator. Informasi penting tetap harus diverifikasi
-                melalui kanal resmi.
+                Informasi penting tetap harus diverifikasi melalui kanal resmi.
               </Text>
             </View>
           </Card>
 
           <Text style={styles.footerNote}>
-            Dibuat sebagai proyek mandiri. Tidak memuat kredensial atau data perusahaan.
+            Bukan layanan resmi operator. Verifikasi info penting di kanal resmi.
           </Text>
         </ScrollView>
       </KeyboardAvoidingView>

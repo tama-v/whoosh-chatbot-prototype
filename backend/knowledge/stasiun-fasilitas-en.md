@@ -1,4 +1,4 @@
-# Stations and Facilities (Demo Document)
+# Stations and Facilities
 
 > Sample document for the Whoosh AI prototype. Not an official operator document. Actual facilities can differ at each station.
 

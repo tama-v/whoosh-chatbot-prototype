@@ -150,12 +150,9 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   } catch (error) {
     if (error instanceof ApiError) throw error;
     if (error instanceof Error && error.name === "AbortError") {
-      throw new ApiError("Server terlalu lama merespons. Periksa koneksi lalu coba lagi.", 0);
+      throw new ApiError("Layanan terlalu lama merespons. Periksa koneksi lalu coba lagi.", 0);
     }
-    throw new ApiError(
-      `Tidak dapat terhubung ke ${apiBase}. Pastikan backend berjalan dan alamat server di menu Akun sudah benar.`,
-      0,
-    );
+    throw new ApiError("Tidak dapat terhubung. Periksa koneksi internet lalu coba lagi.", 0);
   } finally {
     clearTimeout(timer);
   }

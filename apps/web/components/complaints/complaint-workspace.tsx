@@ -162,7 +162,7 @@ export function ComplaintWorkspace() {
     } catch (err) {
       setTracked(null);
       setTrackError(
-        err instanceof Error ? err.message : "Laporan tidak ditemukan pada sistem demo.",
+        err instanceof Error ? err.message : "Laporan tidak ditemukan.",
       );
     } finally {
       setTracking(false);
@@ -213,15 +213,10 @@ export function ComplaintWorkspace() {
             Ceritakan kendalanya, Heiser bantu rapikan.
           </h1>
           <p className="mt-1.5 max-w-xl text-[13.5px] leading-relaxed text-muted">
-            Kategori dan prioritas dianalisis otomatis dari deskripsi. Semua laporan tersimpan di
-            sistem simulasi internal aplikasi.
+            Kategori dan prioritas dianalisis otomatis dari deskripsi yang kamu tulis.
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap items-center gap-2">
-          <span className="demo-badge">
-            <Sparkles className="h-3 w-3" />
-            Simulasi internal
-          </span>
           <span className="rounded-full border border-line bg-paper px-3 py-1.5 text-[13px] font-semibold text-muted">
             Bukan tiket resmi operator
           </span>
@@ -326,8 +321,7 @@ export function ComplaintWorkspace() {
                   </div>
 
                   <p className="mt-4 text-center text-[13px] leading-relaxed text-muted/60">
-                    Alur penanganan pada aplikasi ini adalah demo. Untuk keadaan darurat, hubungi
-                    petugas di stasiun.
+                    Untuk keadaan darurat, hubungi petugas di stasiun.
                   </p>
                 </div>
               ) : (
@@ -409,7 +403,7 @@ export function ComplaintWorkspace() {
                   {!analysis ? (
                     <div className="mt-4 flex flex-col-reverse gap-2 sm:flex-row sm:items-center sm:justify-between">
                       <p className="text-[13px] leading-relaxed text-muted/60">
-                        Data hanya disimpan pada backend demo SQLite.
+                        Laporan tersimpan di akunmu dan bisa dilacak lewat nomor tiket.
                       </p>
                       <button type="submit" disabled={analyzing} className="ui-btn-primary">
                         {analyzing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
@@ -422,9 +416,6 @@ export function ComplaintWorkspace() {
                         <p className="flex items-center gap-1.5 text-[13px] font-extrabold text-ink">
                           <Sparkles className="h-3.5 w-3.5 text-maroon" />
                           Analisis Heiser
-                          <span className="rounded-full bg-paper px-1.5 py-0.5 text-[13px] font-medium text-maroon/70">
-                            demo
-                          </span>
                         </p>
                         <PriorityBadge priority={priority} />
                       </div>
@@ -548,8 +539,8 @@ export function ComplaintWorkspace() {
               <div>
                 <p className="text-[13px] font-bold text-ink">Bagaimana laporan ini diproses?</p>
                 <p className="mt-0.5 max-w-xl text-[13px] leading-relaxed text-muted">
-                  Di aplikasi demo, status hanya berubah lewat dashboard admin. Tidak ada tim operator
-                  yang menerima laporan ini.
+                  Status laporan diperbarui oleh petugas pada prototipe ini. Belum terhubung ke tim
+                  operator resmi.
                 </p>
               </div>
             </div>
@@ -654,7 +645,7 @@ export function ComplaintWorkspace() {
               <p className="p-4 text-[13px] leading-relaxed text-rose-700">{reportsError}</p>
             ) : reports.length === 0 ? (
               <p className="p-4 text-[13px] leading-relaxed text-muted">
-                Belum ada laporan pada sistem demo. Buat laporan pertama lewat formulir.
+                Belum ada laporan. Buat laporan pertama lewat formulir.
               </p>
             ) : (
               <div className="scroll-area max-h-[360px] overflow-y-auto p-2">
@@ -693,7 +684,7 @@ export function ComplaintWorkspace() {
             )}
 
             <p className="border-t border-line/70 px-4 py-2.5 text-[13px] leading-relaxed text-muted/60">
-              Data contoh + laporan buatanmu di backend SQLite demo.
+              Data contoh dan laporan milikmu tersimpan di akun ini.
             </p>
           </div>
         </aside>

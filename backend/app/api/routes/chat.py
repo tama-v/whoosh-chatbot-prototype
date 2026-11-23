@@ -8,17 +8,24 @@ from collections.abc import AsyncIterator
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
-from app.core.config import AI_CONFIGURED, MAX_HISTORY_MESSAGES
+from app.core.config import AI_CONFIGURED, MAX_HISTORY_MESSAGES, SOCIAL_LLM_TIMEOUT
 from app.core.security import Actor, get_actor
 from app.database.db import get_conn, now_iso
 from app.schemas import ChatRequest
-from app.services.ai.qwen_provider import complete_qwen, stream_qwen
+from app.services.ai.qwen_provider import (
+    complete_qwen,
+    complete_social,
+    stream_qwen,
+    stream_social,
+)
 from app.services.rag.knowledge import (
     build_demo_answer,
     build_guidance_answer,
     build_social_answer,
     detect_guidance_intent,
     detect_social_intent,
+    is_followup,
+    last_topic_question,
     retrieve_with_trace,
     select_demo_hits,
 )
@@ -36,6 +43,21 @@ def _citation_list(focused) -> list[dict]:
         seen.add(hit.document_id)
         citations.append(hit.citation)
     return citations
+
+
+def _retrieve(
+    question: str, history: list[dict[str, str]], language: str
+) -> tuple[list, dict]:
+    """Retrieve for the question; follow-ups are anchored to the previous topic."""
+    previous = last_topic_question(history) if is_followup(question) else None
+    if previous:
+        hits, trace = retrieve_with_trace(previous, language=language)
+        trace = dict(trace)
+        trace["strategy"] = "followup-context"
+        trace["followup_from"] = question
+        trace["followup_anchor"] = previous
+        return hits, trace
+    return retrieve_with_trace(question, language=language)
 
 
 def _sse(payload: dict) -> str:
@@ -128,6 +150,7 @@ async def chat_stream(payload: ChatRequest, actor: Actor = Depends(get_actor)) -
     history = _history(conversation_id)
     social_intent = detect_social_intent(question, payload.language)
     guidance_intent = None if social_intent else detect_guidance_intent(question)
+    social_anchor = None
     if social_intent or guidance_intent:
         hits, retrieval_trace = [], {
             "strategy": "social" if social_intent else guidance_intent,
@@ -135,31 +158,32 @@ async def chat_stream(payload: ChatRequest, actor: Actor = Depends(get_actor)) -
         }
         if social_intent:
             retrieval_trace["social_intent"] = social_intent
-            demo_answer = build_social_answer(social_intent, payload.language)
+            social_anchor = last_topic_question(history) if social_intent == "meta" else None
+            demo_answer = build_social_answer(social_intent, payload.language, social_anchor)
         else:
             demo_answer = build_guidance_answer(guidance_intent or "", payload.language)
         context = ""
         citations = []
     else:
-        hits, retrieval_trace = retrieve_with_trace(question, language=payload.language)
+        hits, retrieval_trace = _retrieve(question, history, payload.language)
+        answer_question = retrieval_trace.get("followup_anchor") or question
         context = "\n\n---\n\n".join(
             f"[{hit.document_title} | {hit.section or 'Umum'}]\n{hit.content}" for hit in hits
         )
-        demo_answer = build_demo_answer(question, hits, payload.language)
-        citations = _citation_list(select_demo_hits(question, hits, payload.language)[0])
+        demo_answer = build_demo_answer(answer_question, hits, payload.language)
+        citations = _citation_list(select_demo_hits(answer_question, hits, payload.language)[0])
     user_message_id = str(uuid.uuid4())
     assistant_message_id = str(uuid.uuid4())
     _save_message(user_message_id, conversation_id, "user", question, [], input_type=payload.input_type)
 
     async def event_stream() -> AsyncIterator[str]:
         parts: list[str] = []
-        mode = (
-            "demo"
-            if social_intent or guidance_intent or not AI_CONFIGURED
-            else "qwen"
-            if hits
-            else "no-evidence"
-        )
+        if social_intent or guidance_intent:
+            mode = "conversational"
+        elif hits:
+            mode = "qwen" if AI_CONFIGURED else "demo"
+        else:
+            mode = "no-evidence"
         yield _sse(
             {
                 "type": "meta",
@@ -176,6 +200,21 @@ async def chat_stream(payload: ChatRequest, actor: Actor = Depends(get_actor)) -
             }
         )
         try:
+            if AI_CONFIGURED and social_intent:
+                try:
+                    async for delta in stream_social(
+                        question,
+                        [] if social_intent == "meta" else history,
+                        payload.language,
+                        social_anchor,
+                        demo_answer,
+                    ):
+                        parts.append(delta)
+                        yield _sse({"type": "delta", "text": delta})
+                except Exception:
+                    logger.exception(
+                        "Qwen social streaming failed, falling back to template answer"
+                    )
             if AI_CONFIGURED and hits:
                 try:
                     async for delta in stream_qwen(question, context, history, payload.language):
@@ -232,6 +271,7 @@ async def chat_once(payload: ChatRequest, actor: Actor = Depends(get_actor)) -> 
     history = _history(conversation_id)
     social_intent = detect_social_intent(question, payload.language)
     guidance_intent = None if social_intent else detect_guidance_intent(question)
+    social_anchor = None
     if social_intent or guidance_intent:
         hits, retrieval_trace = [], {
             "strategy": "social" if social_intent else guidance_intent,
@@ -239,25 +279,48 @@ async def chat_once(payload: ChatRequest, actor: Actor = Depends(get_actor)) -> 
         }
         if social_intent:
             retrieval_trace["social_intent"] = social_intent
-            answer = build_social_answer(social_intent, payload.language)
+            social_anchor = last_topic_question(history) if social_intent == "meta" else None
+            answer = build_social_answer(social_intent, payload.language, social_anchor)
         else:
             answer = build_guidance_answer(guidance_intent or "", payload.language)
-        mode = "demo"
+        mode = "conversational"
         citations = []
     else:
-        hits, retrieval_trace = retrieve_with_trace(question, language=payload.language)
+        hits, retrieval_trace = _retrieve(question, history, payload.language)
+        answer_question = retrieval_trace.get("followup_anchor") or question
         context = "\n\n---\n\n".join(
             f"[{hit.document_title} | {hit.section or 'Umum'}]\n{hit.content}" for hit in hits
         )
-        answer = build_demo_answer(question, hits, payload.language)
-        citations = _citation_list(select_demo_hits(question, hits, payload.language)[0])
-        mode = "qwen" if AI_CONFIGURED and hits else "demo" if not AI_CONFIGURED else "no-evidence"
+        answer = build_demo_answer(answer_question, hits, payload.language)
+        citations = _citation_list(select_demo_hits(answer_question, hits, payload.language)[0])
+        if hits:
+            mode = "qwen" if AI_CONFIGURED else "demo"
+        else:
+            mode = "no-evidence"
         if AI_CONFIGURED and hits:
             try:
                 answer = await complete_qwen(question, context, history, payload.language)
             except Exception:
                 logger.exception("Qwen completion failed, falling back to demo answer")
                 mode = "demo-fallback"
+
+    if AI_CONFIGURED and social_intent:
+        template_answer = answer
+        try:
+            answer = await asyncio.wait_for(
+                complete_social(
+                    question,
+                    [] if social_intent == "meta" else history,
+                    payload.language,
+                    social_anchor,
+                    template_answer,
+                ),
+                timeout=SOCIAL_LLM_TIMEOUT,
+            )
+        except Exception:
+            logger.exception(
+                "Qwen social completion failed, falling back to template answer"
+            )
 
     user_message_id = str(uuid.uuid4())
     assistant_message_id = str(uuid.uuid4())

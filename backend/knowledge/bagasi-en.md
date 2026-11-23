@@ -1,4 +1,4 @@
-# Baggage Rules (Demo Document)
+# Baggage Rules
 
 > Sample document for the Whoosh AI prototype. Not an official operator document. Baggage rules must be verified on the ticket and through official operator channels.
 
@@ -6,7 +6,7 @@
 
 Baggage rules can differ by ticket type and travel class. Check the baggage information on the booking page, the ticket, or official operator channels before departure.
 
-Baggage allowance (size, weight, and number of pieces) follows the ticket type and travel class shown on the booking. This demo document does not list official limits.
+Baggage allowance (size, weight, and number of pieces) follows the ticket type and travel class shown on the booking. This guide does not list official limits.
 
 - Keep documents, medicines, and valuables in cabin baggage.
 - Put a name and contact label on suitcases or bags.

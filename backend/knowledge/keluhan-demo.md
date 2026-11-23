@@ -1,4 +1,4 @@
-# Menyusun Laporan Keluhan (Dokumen Demo)
+# Menyusun Laporan Keluhan
 
 > Dokumen contoh untuk prototype Whoosh AI. Laporan pada prototype ini adalah simulasi internal dan bukan tiket resmi operator.
 
@@ -20,4 +20,4 @@
 
 ## Status simulasi
 
-Status yang tersedia adalah submitted_to_demo_system, under_review, resolved, dan closed. Status ini hanya menggambarkan alur demo di dalam aplikasi dan tidak terhubung ke sistem operator.
+Status laporan: Terkirim, Ditinjau, Selesai, dan Ditutup. Status ini hanya menggambarkan alur di dalam aplikasi dan tidak terhubung ke sistem operator.

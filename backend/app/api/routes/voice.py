@@ -2,35 +2,16 @@ import logging
 
 from fastapi import APIRouter, File, Form, HTTPException, Response, UploadFile
 
-from app.core.config import MAX_AUDIO_BYTES, VOICE_NOTICE, VOICE_NOTICE_NO_SAPI
+from app.core.config import MAX_AUDIO_BYTES
 from app.schemas import VoiceRequest
 from app.services.voice import (
     VoiceUnavailable,
     synthesize,
     transcribe,
-    voice_catalog,
 )
-from app.services.voice.service import health_payload
 
 logger = logging.getLogger("whoosh_ai.voice")
 router = APIRouter(prefix="/voice", tags=["voice"])
-
-
-@router.get("/health")
-def voice_health() -> dict:
-    payload = health_payload()
-    payload.update(
-        {
-            "mode": "qwen" if payload["tts_configured"] or payload["asr_configured"] else "demo",
-            "notice": VOICE_NOTICE if payload["demo_tts"] else VOICE_NOTICE_NO_SAPI,
-        }
-    )
-    return payload
-
-
-@router.get("/voices")
-def voices() -> dict:
-    return {"voices": voice_catalog(), "demo_tts": health_payload()["demo_tts"]}
 
 
 @router.post("/transcribe")
@@ -55,8 +36,6 @@ async def synthesize_audio(payload: VoiceRequest) -> Response:
     except VoiceUnavailable as exc:
         raise HTTPException(status_code=exc.status_code, detail=str(exc)) from exc
     headers = {
-        "X-Voice-Provider": result["provider"],
-        "X-Voice-Model": result["model"] or "",
         "X-Voice-Cached": "1" if result["cached"] else "0",
         "Cache-Control": "private, max-age=3600",
     }

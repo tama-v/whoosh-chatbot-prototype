@@ -1,4 +1,4 @@
-# Barang Tertinggal (Dokumen Demo)
+# Barang Tertinggal
 
 > Dokumen contoh untuk prototype Whoosh AI. Bukan layanan lost and found resmi operator.
 
